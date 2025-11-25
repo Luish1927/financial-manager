@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -6,7 +6,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,25 +17,46 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Transaction } from "@/types/transaction";
-import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
-interface AddTransactionDialogProps {
-  onAddTransaction: (transaction: Omit<Transaction, 'id'>) => void;
+interface TransactionFormDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  initialTransaction?: Transaction;
+  onSaveTransaction: (transaction: Transaction) => void;
+  categories: string[];
 }
 
-const categories = {
-  income: ['Salário', 'Freelance', 'Investimentos', 'Outros'],
-  expense: ['Alimentação', 'Transporte', 'Moradia', 'Lazer', 'Saúde', 'Educação', 'Outros'],
-};
+export const TransactionFormDialog = ({
+  open,
+  onOpenChange,
+  initialTransaction,
+  onSaveTransaction,
+  categories,
+}: TransactionFormDialogProps) => {
+  const isEditing = !!initialTransaction;
 
-export const AddTransactionDialog = ({ onAddTransaction }: AddTransactionDialogProps) => {
-  const [open, setOpen] = useState(false);
-  const [type, setType] = useState<'income' | 'expense'>('expense');
-  const [description, setDescription] = useState('');
-  const [amount, setAmount] = useState('');
-  const [category, setCategory] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [type, setType] = useState<'income' | 'expense'>(initialTransaction?.type || 'expense');
+  const [description, setDescription] = useState(initialTransaction?.description || '');
+  const [amount, setAmount] = useState(initialTransaction?.amount.toString() || '');
+  const [category, setCategory] = useState(initialTransaction?.category || '');
+  const [date, setDate] = useState(initialTransaction?.date || new Date().toISOString().split('T')[0]);
+
+  useEffect(() => {
+    if (open) {
+      setType(initialTransaction?.type || 'expense');
+      setDescription(initialTransaction?.description || '');
+      setAmount(initialTransaction?.amount.toString() || '');
+      setCategory(initialTransaction?.category || '');
+      setDate(initialTransaction?.date || new Date().toISOString().split('T')[0]);
+    } else {
+      setType('expense');
+      setDescription('');
+      setAmount('');
+      setCategory('');
+      setDate(new Date().toISOString().split('T')[0]);
+    }
+  }, [open, initialTransaction]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,36 +66,30 @@ export const AddTransactionDialog = ({ onAddTransaction }: AddTransactionDialogP
       return;
     }
 
-    onAddTransaction({
+    const transactionToSave: Transaction = {
+      id: isEditing ? initialTransaction!.id : '',
       type,
       description,
       amount: parseFloat(amount),
       category,
       date,
-    });
+    };
 
-    toast.success(`${type === 'income' ? 'Receita' : 'Despesa'} adicionada com sucesso!`);
+    onSaveTransaction(transactionToSave);
 
-    setDescription('');
-    setAmount('');
-    setCategory('');
-    setDate(new Date().toISOString().split('T')[0]);
-    setOpen(false);
+    toast.success(`${isEditing ? 'Transação atualizada' : (type === 'income' ? 'Receita' : 'Despesa') + ' adicionada'} com sucesso!`);
+    onOpenChange(false);
   };
 
+  const categoryOptions = categories.map(cat => ({ value: cat, label: cat }));
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="shadow-elevated">
-          <Plus className="mr-2 h-4 w-4" />
-          Nova Transação
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Nova Transação</DialogTitle>
+          <DialogTitle>{isEditing ? 'Editar Transação' : 'Nova Transação'}</DialogTitle>
           <DialogDescription>
-            Adicione uma nova receita ou despesa ao seu gerenciamento financeiro.
+            {isEditing ? 'Edite os detalhes da transação.' : 'Adicione uma nova receita ou despesa ao seu gerenciamento financeiro.'}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -124,9 +138,9 @@ export const AddTransactionDialog = ({ onAddTransaction }: AddTransactionDialogP
                 <SelectValue placeholder="Selecione uma categoria" />
               </SelectTrigger>
               <SelectContent>
-                {categories[type].map((cat) => (
-                  <SelectItem key={cat} value={cat}>
-                    {cat}
+                {categoryOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -144,7 +158,7 @@ export const AddTransactionDialog = ({ onAddTransaction }: AddTransactionDialogP
           </div>
 
           <Button type="submit" className="w-full">
-            Adicionar Transação
+            {isEditing ? 'Salvar Alterações' : 'Adicionar Transação'}
           </Button>
         </form>
       </DialogContent>

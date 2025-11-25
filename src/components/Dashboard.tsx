@@ -29,9 +29,11 @@ export const Dashboard = ({ balance, income, expenses }: DashboardProps) => {
 
       <Card className="shadow-card border-success/20 bg-gradient-card">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            Receitas
-          </CardTitle>
+          <div>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Receitas
+            </CardTitle>
+          </div>
           <TrendingUp className="h-4 w-4 text-success" />
         </CardHeader>
         <CardContent>
@@ -46,9 +48,11 @@ export const Dashboard = ({ balance, income, expenses }: DashboardProps) => {
 
       <Card className="shadow-card border-destructive/20 bg-gradient-card">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            Despesas
-          </CardTitle>
+          <div>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Despesas
+            </CardTitle>
+          </div>
           <TrendingDown className="h-4 w-4 text-destructive" />
         </CardHeader>
         <CardContent>
