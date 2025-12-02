@@ -1,7 +1,7 @@
-import getDatabase from '../db.js';
+import { sql, initDatabase } from '../db.js';
 import { authenticateToken, handleCors } from '../auth-middleware.js';
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   if (handleCors(req, res)) return;
 
   const auth = authenticateToken(req);
@@ -9,14 +9,14 @@ export default function handler(req, res) {
     return res.status(auth.status).json({ error: auth.error });
   }
 
-  const db = getDatabase();
-
   try {
+    await initDatabase();
+
     if (req.method === 'GET') {
-      const categories = db.prepare(
-        'SELECT * FROM categories WHERE user_id = ? ORDER BY name ASC'
-      ).all(auth.user.userId);
-      const categoryNames = categories.map(c => c.name);
+      const result = await sql`
+        SELECT * FROM categories WHERE user_id = ${auth.user.userId} ORDER BY name ASC
+      `;
+      const categoryNames = result.rows.map(c => c.name);
       return res.json(categoryNames);
     }
 
@@ -27,12 +27,17 @@ export default function handler(req, res) {
         return res.status(400).json({ error: 'Nome da categoria é obrigatório' });
       }
 
-      const existing = db.prepare('SELECT id FROM categories WHERE user_id = ? AND name = ?').get(auth.user.userId, name);
-      if (existing) {
+      const existing = await sql`
+        SELECT id FROM categories WHERE user_id = ${auth.user.userId} AND name = ${name}
+      `;
+
+      if (existing.rows.length > 0) {
         return res.status(400).json({ error: 'Categoria já existe' });
       }
 
-      db.prepare('INSERT INTO categories (user_id, name) VALUES (?, ?)').run(auth.user.userId, name);
+      await sql`
+        INSERT INTO categories (user_id, name) VALUES (${auth.user.userId}, ${name})
+      `;
       return res.status(201).json({ name });
     }
 

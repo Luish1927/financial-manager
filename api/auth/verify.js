@@ -1,8 +1,8 @@
 import jwt from 'jsonwebtoken';
-import getDatabase from '../db.js';
+import { sql, initDatabase } from '../db.js';
 import { handleCors } from '../auth-middleware.js';
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   if (handleCors(req, res)) return;
 
   if (req.method !== 'GET') {
@@ -17,9 +17,15 @@ export default function handler(req, res) {
   }
 
   try {
+    await initDatabase();
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev_secret_key_change_in_production_2024');
-    const db = getDatabase();
-    const user = db.prepare('SELECT id, name, email FROM users WHERE id = ?').get(decoded.userId);
+
+    const result = await sql`
+      SELECT id, name, email FROM users WHERE id = ${decoded.userId}
+    `;
+
+    const user = result.rows[0];
 
     if (!user) {
       return res.status(404).json({ error: 'Usuário não encontrado' });

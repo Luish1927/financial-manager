@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import getDatabase from '../db.js';
+import { sql, initDatabase } from '../db.js';
 import { handleCors } from '../auth-middleware.js';
 
 export default async function handler(req, res) {
@@ -11,14 +11,19 @@ export default async function handler(req, res) {
   }
 
   try {
+    await initDatabase();
+
     const { email, password } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ error: 'Email e senha são obrigatórios' });
     }
 
-    const db = getDatabase();
-    const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+    const result = await sql`
+      SELECT * FROM users WHERE email = ${email}
+    `;
+
+    const user = result.rows[0];
 
     if (!user) {
       return res.status(401).json({ error: 'Email ou senha incorretos' });

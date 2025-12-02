@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import getDatabase from '../db.js';
+import { sql, initDatabase } from '../db.js';
 import { handleCors } from '../auth-middleware.js';
 
 export default async function handler(req, res) {
@@ -11,6 +11,8 @@ export default async function handler(req, res) {
   }
 
   try {
+    await initDatabase();
+
     const { name, email, password } = req.body;
 
     if (!name || !email || !password) {
@@ -21,35 +23,40 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'A senha deve ter no mínimo 6 caracteres' });
     }
 
-    const db = getDatabase();
+    const existingUser = await sql`
+      SELECT id FROM users WHERE email = ${email}
+    `;
 
-    const existingUser = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
-    if (existingUser) {
+    if (existingUser.rows.length > 0) {
       return res.status(400).json({ error: 'Email já cadastrado' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const result = db.prepare(
-      'INSERT INTO users (name, email, password) VALUES (?, ?, ?)'
-    ).run(name, email, hashedPassword);
+    const result = await sql`
+      INSERT INTO users (name, email, password)
+      VALUES (${name}, ${email}, ${hashedPassword})
+      RETURNING id
+    `;
 
-    const userId = result.lastInsertRowid;
+    const userId = result.rows[0].id;
 
     const defaultCategories = [
       "Alimentação", "Transporte", "Moradia", "Saúde", "Lazer",
       "Educação", "Salário", "Freelance", "Investimentos"
     ];
 
-    const insertCategory = db.prepare('INSERT INTO categories (user_id, name) VALUES (?, ?)');
-    const insertMany = db.transaction((categories) => {
-      for (const category of categories) {
-        insertCategory.run(userId, category);
-      }
-    });
-    insertMany(defaultCategories);
+    for (const category of defaultCategories) {
+      await sql`
+        INSERT INTO categories (user_id, name)
+        VALUES (${userId}, ${category})
+      `;
+    }
 
-    db.prepare('INSERT INTO user_settings (user_id, monthly_limit) VALUES (?, 0)').run(userId);
+    await sql`
+      INSERT INTO user_settings (user_id, monthly_limit)
+      VALUES (${userId}, 0)
+    `;
 
     const token = jwt.sign(
       { userId, email },

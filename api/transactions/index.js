@@ -1,7 +1,7 @@
-import getDatabase from '../db.js';
+import { sql, initDatabase } from '../db.js';
 import { authenticateToken, handleCors } from '../auth-middleware.js';
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   if (handleCors(req, res)) return;
 
   const auth = authenticateToken(req);
@@ -9,14 +9,16 @@ export default function handler(req, res) {
     return res.status(auth.status).json({ error: auth.error });
   }
 
-  const db = getDatabase();
-
   try {
+    await initDatabase();
+
     if (req.method === 'GET') {
-      const transactions = db.prepare(
-        'SELECT * FROM transactions WHERE user_id = ? ORDER BY date DESC, created_at DESC'
-      ).all(auth.user.userId);
-      return res.json(transactions);
+      const result = await sql`
+        SELECT * FROM transactions
+        WHERE user_id = ${auth.user.userId}
+        ORDER BY date DESC, created_at DESC
+      `;
+      return res.json(result.rows);
     }
 
     if (req.method === 'POST') {
@@ -30,12 +32,13 @@ export default function handler(req, res) {
         return res.status(400).json({ error: 'Tipo deve ser income ou expense' });
       }
 
-      const result = db.prepare(
-        'INSERT INTO transactions (user_id, type, description, amount, category, date) VALUES (?, ?, ?, ?, ?, ?)'
-      ).run(auth.user.userId, type, description, amount, category, date);
+      const result = await sql`
+        INSERT INTO transactions (user_id, type, description, amount, category, date)
+        VALUES (${auth.user.userId}, ${type}, ${description}, ${amount}, ${category}, ${date})
+        RETURNING *
+      `;
 
-      const transaction = db.prepare('SELECT * FROM transactions WHERE id = ?').get(result.lastInsertRowid);
-      return res.status(201).json(transaction);
+      return res.status(201).json(result.rows[0]);
     }
 
     return res.status(405).json({ error: 'Método não permitido' });

@@ -1,7 +1,7 @@
-import getDatabase from '../db.js';
+import { sql, initDatabase } from '../db.js';
 import { authenticateToken, handleCors } from '../auth-middleware.js';
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   if (handleCors(req, res)) return;
 
   const auth = authenticateToken(req);
@@ -10,29 +10,39 @@ export default function handler(req, res) {
   }
 
   const { id } = req.query;
-  const db = getDatabase();
 
   try {
+    await initDatabase();
+
     if (req.method === 'PUT') {
       const { type, description, amount, category, date } = req.body;
 
-      const existing = db.prepare('SELECT id FROM transactions WHERE id = ? AND user_id = ?').get(id, auth.user.userId);
-      if (!existing) {
+      const existing = await sql`
+        SELECT id FROM transactions WHERE id = ${id} AND user_id = ${auth.user.userId}
+      `;
+
+      if (existing.rows.length === 0) {
         return res.status(404).json({ error: 'Transação não encontrada' });
       }
 
-      db.prepare(
-        'UPDATE transactions SET type = ?, description = ?, amount = ?, category = ?, date = ? WHERE id = ? AND user_id = ?'
-      ).run(type, description, amount, category, date, id, auth.user.userId);
+      const result = await sql`
+        UPDATE transactions
+        SET type = ${type}, description = ${description}, amount = ${amount},
+            category = ${category}, date = ${date}
+        WHERE id = ${id} AND user_id = ${auth.user.userId}
+        RETURNING *
+      `;
 
-      const transaction = db.prepare('SELECT * FROM transactions WHERE id = ?').get(id);
-      return res.json(transaction);
+      return res.json(result.rows[0]);
     }
 
     if (req.method === 'DELETE') {
-      const result = db.prepare('DELETE FROM transactions WHERE id = ? AND user_id = ?').run(id, auth.user.userId);
+      const result = await sql`
+        DELETE FROM transactions WHERE id = ${id} AND user_id = ${auth.user.userId}
+        RETURNING id
+      `;
 
-      if (result.changes === 0) {
+      if (result.rows.length === 0) {
         return res.status(404).json({ error: 'Transação não encontrada' });
       }
 

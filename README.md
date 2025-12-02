@@ -24,8 +24,8 @@ Sistema completo de gerenciamento financeiro pessoal com autenticação de usuá
 - React Router (navegação)
 
 ### Backend
-- Node.js + Express
-- SQLite (banco de dados)
+- Node.js + Express (modo serverless na Vercel)
+- PostgreSQL via @vercel/postgres
 - JWT (autenticação)
 - bcryptjs (criptografia)
 
@@ -107,7 +107,7 @@ Veja a documentação completa da API em `backend/README.md`
 
 - Autenticação JWT com token de 7 dias
 - Dados isolados por usuário
-- Persistência em banco de dados SQLite
+- Persistência em banco de dados PostgreSQL
 - Validação de formulários
 - Tratamento de erros
 - Toast notifications
@@ -130,20 +130,22 @@ npm start        # Produção
 
 ## Deploy
 
-### Deploy Simplificado (Frontend + Backend na Vercel)
+### Deploy na Vercel (Frontend + Backend + Postgres)
 
-Este projeto está configurado para deploy completo na Vercel com backend integrado via Serverless Functions.
+Este projeto está configurado para deploy completo na Vercel com backend integrado via Serverless Functions e Vercel Postgres.
 
-**⚠️ IMPORTANTE:** SQLite em ambiente serverless é efêmero. Para produção real, migre para PostgreSQL, MySQL ou MongoDB.
+**✅ Banco Persistente:** Usa Vercel Postgres (PostgreSQL gerenciado) para dados persistentes e seguros.
 
 **Guia completo:** Veja [DEPLOY.md](./DEPLOY.md) para instruções detalhadas.
 
 **Quick Start:**
 
-1. Faça push para GitHub/GitLab
-2. Importe projeto na Vercel
-3. Adicione variável de ambiente: `JWT_SECRET=sua_chave_aqui`
-4. Deploy! 🚀
+1. Crie um banco Vercel Postgres no dashboard
+2. Faça push para GitHub/GitLab
+3. Importe projeto na Vercel
+4. Conecte ao banco Postgres criado
+5. Adicione variável de ambiente: `JWT_SECRET=sua_chave_aqui`
+6. Deploy! 🚀
 
 ### Deploy Separado (Recomendado para Produção)
 

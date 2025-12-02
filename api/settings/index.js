@@ -1,7 +1,7 @@
-import getDatabase from '../db.js';
+import { sql, initDatabase } from '../db.js';
 import { authenticateToken, handleCors } from '../auth-middleware.js';
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   if (handleCors(req, res)) return;
 
   const auth = authenticateToken(req);
@@ -9,18 +9,22 @@ export default function handler(req, res) {
     return res.status(auth.status).json({ error: auth.error });
   }
 
-  const db = getDatabase();
-
   try {
-    if (req.method === 'GET') {
-      const settings = db.prepare('SELECT monthly_limit FROM user_settings WHERE user_id = ?').get(auth.user.userId);
+    await initDatabase();
 
-      if (!settings) {
-        db.prepare('INSERT INTO user_settings (user_id, monthly_limit) VALUES (?, 0)').run(auth.user.userId);
+    if (req.method === 'GET') {
+      const result = await sql`
+        SELECT monthly_limit FROM user_settings WHERE user_id = ${auth.user.userId}
+      `;
+
+      if (result.rows.length === 0) {
+        await sql`
+          INSERT INTO user_settings (user_id, monthly_limit) VALUES (${auth.user.userId}, 0)
+        `;
         return res.json({ monthlyLimit: 0 });
       }
 
-      return res.json({ monthlyLimit: settings.monthly_limit });
+      return res.json({ monthlyLimit: parseFloat(result.rows[0].monthly_limit) });
     }
 
     return res.status(405).json({ error: 'Método não permitido' });

@@ -1,7 +1,7 @@
-import getDatabase from '../db.js';
+import { sql, initDatabase } from '../db.js';
 import { authenticateToken, handleCors } from '../auth-middleware.js';
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   if (handleCors(req, res)) return;
 
   const auth = authenticateToken(req);
@@ -13,9 +13,9 @@ export default function handler(req, res) {
     return res.status(405).json({ error: 'Método não permitido' });
   }
 
-  const db = getDatabase();
-
   try {
+    await initDatabase();
+
     const { monthlyLimit } = req.body;
 
     if (monthlyLimit === undefined || monthlyLimit === null) {
@@ -26,14 +26,21 @@ export default function handler(req, res) {
       return res.status(400).json({ error: 'Limite mensal não pode ser negativo' });
     }
 
-    const existing = db.prepare('SELECT id FROM user_settings WHERE user_id = ?').get(auth.user.userId);
+    const existing = await sql`
+      SELECT id FROM user_settings WHERE user_id = ${auth.user.userId}
+    `;
 
-    if (existing) {
-      db.prepare('UPDATE user_settings SET monthly_limit = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?')
-        .run(monthlyLimit, auth.user.userId);
+    if (existing.rows.length > 0) {
+      await sql`
+        UPDATE user_settings
+        SET monthly_limit = ${monthlyLimit}, updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = ${auth.user.userId}
+      `;
     } else {
-      db.prepare('INSERT INTO user_settings (user_id, monthly_limit) VALUES (?, ?)')
-        .run(auth.user.userId, monthlyLimit);
+      await sql`
+        INSERT INTO user_settings (user_id, monthly_limit)
+        VALUES (${auth.user.userId}, ${monthlyLimit})
+      `;
     }
 
     return res.json({ monthlyLimit });

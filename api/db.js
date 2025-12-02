@@ -1,75 +1,65 @@
-import Database from 'better-sqlite3';
-import { join } from 'path';
-import { tmpdir } from 'os';
-import { existsSync, mkdirSync, copyFileSync } from 'fs';
+import { sql } from '@vercel/postgres';
 
-let db = null;
+let initialized = false;
 
-const getDatabase = () => {
-  if (db) return db;
+const initDatabase = async () => {
+  if (initialized) return;
 
-  // Em ambiente serverless, usar /tmp para o banco
-  const isProduction = process.env.NODE_ENV === 'production';
-  const dbPath = isProduction
-    ? join(tmpdir(), 'conta-em-paz.db')
-    : join(process.cwd(), 'database', 'conta-em-paz.db');
+  try {
+    // Criar tabela users
+    await sql`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
 
-  // Garantir que o diretório existe
-  const dbDir = isProduction ? tmpdir() : join(process.cwd(), 'database');
-  if (!existsSync(dbDir)) {
-    mkdirSync(dbDir, { recursive: true });
+    // Criar tabela categories
+    await sql`
+      CREATE TABLE IF NOT EXISTS categories (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        UNIQUE(user_id, name)
+      )
+    `;
+
+    // Criar tabela transactions
+    await sql`
+      CREATE TABLE IF NOT EXISTS transactions (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        type TEXT NOT NULL CHECK(type IN ('income', 'expense')),
+        description TEXT NOT NULL,
+        amount NUMERIC NOT NULL,
+        category TEXT NOT NULL,
+        date TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `;
+
+    // Criar tabela user_settings
+    await sql`
+      CREATE TABLE IF NOT EXISTS user_settings (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER UNIQUE NOT NULL,
+        monthly_limit NUMERIC DEFAULT 0,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `;
+
+    initialized = true;
+  } catch (error) {
+    console.error('Error initializing database:', error);
+    throw error;
   }
-
-  db = new Database(dbPath);
-  db.pragma('foreign_keys = ON');
-
-  // Criar tabelas
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      email TEXT UNIQUE NOT NULL,
-      password TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS categories (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
-      name TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-      UNIQUE(user_id, name)
-    )
-  `);
-
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS transactions (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
-      type TEXT NOT NULL CHECK(type IN ('income', 'expense')),
-      description TEXT NOT NULL,
-      amount REAL NOT NULL,
-      category TEXT NOT NULL,
-      date TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    )
-  `);
-
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS user_settings (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER UNIQUE NOT NULL,
-      monthly_limit REAL DEFAULT 0,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    )
-  `);
-
-  return db;
 };
 
-export default getDatabase;
+export { sql, initDatabase };

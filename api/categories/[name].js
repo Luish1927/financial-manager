@@ -1,7 +1,7 @@
-import getDatabase from '../db.js';
+import { sql, initDatabase } from '../db.js';
 import { authenticateToken, handleCors } from '../auth-middleware.js';
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   if (handleCors(req, res)) return;
 
   const auth = authenticateToken(req);
@@ -11,9 +11,10 @@ export default function handler(req, res) {
 
   const { name } = req.query;
   const oldName = decodeURIComponent(name);
-  const db = getDatabase();
 
   try {
+    await initDatabase();
+
     if (req.method === 'PUT') {
       const { newName } = req.body;
 
@@ -21,30 +22,51 @@ export default function handler(req, res) {
         return res.status(400).json({ error: 'Novo nome é obrigatório' });
       }
 
-      const existing = db.prepare('SELECT id FROM categories WHERE user_id = ? AND name = ?').get(auth.user.userId, oldName);
-      if (!existing) {
+      const existing = await sql`
+        SELECT id FROM categories WHERE user_id = ${auth.user.userId} AND name = ${oldName}
+      `;
+
+      if (existing.rows.length === 0) {
         return res.status(404).json({ error: 'Categoria não encontrada' });
       }
 
-      const duplicate = db.prepare('SELECT id FROM categories WHERE user_id = ? AND name = ?').get(auth.user.userId, newName);
-      if (duplicate) {
+      const duplicate = await sql`
+        SELECT id FROM categories WHERE user_id = ${auth.user.userId} AND name = ${newName}
+      `;
+
+      if (duplicate.rows.length > 0) {
         return res.status(400).json({ error: 'Categoria com esse nome já existe' });
       }
 
-      db.prepare('UPDATE categories SET name = ? WHERE user_id = ? AND name = ?').run(newName, auth.user.userId, oldName);
-      db.prepare('UPDATE transactions SET category = ? WHERE user_id = ? AND category = ?').run(newName, auth.user.userId, oldName);
+      await sql`
+        UPDATE categories SET name = ${newName}
+        WHERE user_id = ${auth.user.userId} AND name = ${oldName}
+      `;
+
+      await sql`
+        UPDATE transactions SET category = ${newName}
+        WHERE user_id = ${auth.user.userId} AND category = ${oldName}
+      `;
 
       return res.json({ oldName, newName });
     }
 
     if (req.method === 'DELETE') {
-      const result = db.prepare('DELETE FROM categories WHERE user_id = ? AND name = ?').run(auth.user.userId, oldName);
+      const result = await sql`
+        DELETE FROM categories
+        WHERE user_id = ${auth.user.userId} AND name = ${oldName}
+        RETURNING id
+      `;
 
-      if (result.changes === 0) {
+      if (result.rows.length === 0) {
         return res.status(404).json({ error: 'Categoria não encontrada' });
       }
 
-      db.prepare('DELETE FROM transactions WHERE user_id = ? AND category = ?').run(auth.user.userId, oldName);
+      await sql`
+        DELETE FROM transactions
+        WHERE user_id = ${auth.user.userId} AND category = ${oldName}
+      `;
+
       return res.json({ message: 'Categoria deletada com sucesso' });
     }
 

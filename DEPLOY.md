@@ -1,26 +1,22 @@
 # 🚀 Guia de Deploy na Vercel
 
-Este guia mostra como fazer o deploy do **Conta em Paz** na Vercel com backend e frontend integrados.
+Este guia mostra como fazer o deploy do **Conta em Paz** na Vercel com backend e frontend integrados usando Vercel Postgres.
 
-## ⚠️ Aviso Importante
+## ⚠️ Sobre este Setup
 
-Este setup coloca o backend SQLite junto com o frontend na Vercel. **Isso NÃO é recomendado para produção real** porque:
-
-- O banco SQLite em `/tmp` é efêmero (os dados podem ser perdidos)
-- Serverless functions têm timeout limitado
-- Não há backup automático dos dados
-
-**Use apenas para:**
+Este projeto usa Vercel Postgres, um banco de dados PostgreSQL gerenciado pela Vercel, ideal para:
 - Demonstrações
 - MVPs
 - Testes
 - Protótipos
 
-**Para produção real, considere:**
-- PostgreSQL (Supabase, Neon, Railway)
-- MySQL (PlanetScale)
-- MongoDB Atlas
-- Outro serviço de banco de dados persistente
+**Características:**
+- ✅ Banco de dados persistente (não efêmero como SQLite)
+- ✅ Backup automático
+- ✅ Sem preocupações com compilação de módulos nativos
+- ✅ Escalável
+
+**Plano gratuito:** 256MB de armazenamento, 60 horas de computação/mês
 
 ---
 
@@ -38,7 +34,7 @@ Este setup coloca o backend SQLite junto com o frontend na Vercel. **Isso NÃO �
 
 ```bash
 git add .
-git commit -m "feat: adicionar suporte para deploy na Vercel"
+git commit -m "feat: adicionar suporte para deploy na Vercel com Postgres"
 git push origin main
 ```
 
@@ -46,12 +42,39 @@ git push origin main
 
 Certifique-se que estes arquivos existem:
 - ✅ `vercel.json` (configuração da Vercel)
-- ✅ `package.json` (com dependências do backend)
+- ✅ `package.json` (com @vercel/postgres nas dependências)
 - ✅ Pasta `api/` (funções serverless)
 
 ---
 
-## 🌐 Passo 2: Deploy na Vercel
+## 🗄️ Passo 2: Criar Banco de Dados Vercel Postgres
+
+### 2.1 Via Dashboard da Vercel
+
+1. Acesse https://vercel.com/dashboard
+2. Clique em **"Storage"** no menu lateral
+3. Clique em **"Create Database"**
+4. Escolha **"Postgres"**
+5. Digite um nome para o banco (ex: `conta-em-paz-db`)
+6. Escolha a região mais próxima de você
+7. Clique em **"Create"**
+
+### 2.2 Importante
+
+A Vercel criará automaticamente as variáveis de ambiente:
+- `POSTGRES_URL`
+- `POSTGRES_PRISMA_URL`
+- `POSTGRES_URL_NON_POOLING`
+- `POSTGRES_USER`
+- `POSTGRES_HOST`
+- `POSTGRES_PASSWORD`
+- `POSTGRES_DATABASE`
+
+Essas variáveis serão injetadas automaticamente nas suas funções serverless! ✅
+
+---
+
+## 🌐 Passo 3: Deploy na Vercel
 
 ### Opção A: Via Website (Recomendado)
 
@@ -83,11 +106,18 @@ Certifique-se que estes arquivos existem:
    node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
    ```
 
-6. Clique em **"Deploy"**
+6. **Conectar ao Banco de Dados:**
 
-7. Aguarde 2-5 minutos para o build completar
+   - Na mesma tela de "Environment Variables"
+   - Clique em **"Connect Store"** (ou "Add")
+   - Selecione o banco Postgres que você criou no Passo 2
+   - As variáveis do Postgres serão adicionadas automaticamente!
 
-8. Acesse o link fornecido (ex: `https://seu-projeto.vercel.app`)
+7. Clique em **"Deploy"**
+
+8. Aguarde 2-5 minutos para o build completar
+
+9. Acesse o link fornecido (ex: `https://seu-projeto.vercel.app`)
 
 ### Opção B: Via CLI
 
@@ -108,13 +138,17 @@ vercel env add JWT_SECRET
 vercel env add NODE_ENV
 # Digite: production
 
+# Conectar ao banco Postgres
+vercel link
+vercel env pull
+
 # Deploy em produção
 vercel --prod
 ```
 
 ---
 
-## ✅ Passo 3: Testar o Deploy
+## ✅ Passo 4: Testar o Deploy
 
 1. Acesse a URL do seu projeto na Vercel
 
@@ -126,6 +160,8 @@ vercel --prod
 
 5. Teste todas as funcionalidades
 
+6. Atualize a página - os dados devem persistir! ✅
+
 ---
 
 ## 🔍 Verificar se funcionou
@@ -135,39 +171,78 @@ vercel --prod
 ```bash
 # Substitua SEU_DOMINIO.vercel.app pelo seu domínio
 
-# Health check (se você adicionar)
-curl https://SEU_DOMINIO.vercel.app/api/health
-
 # Criar conta
 curl -X POST https://SEU_DOMINIO.vercel.app/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{"name":"Teste","email":"teste@email.com","password":"123456"}'
+
+# Fazer login
+curl -X POST https://SEU_DOMINIO.vercel.app/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"teste@email.com","password":"123456"}'
+```
+
+---
+
+## 🗄️ Gerenciar Banco de Dados
+
+### Via Dashboard da Vercel
+
+1. Vá em **Storage** > seu banco Postgres
+2. Clique em **"Data"** para ver tabelas e dados
+3. Clique em **"Query"** para executar SQL
+4. Use **"Backups"** para criar/restaurar backups manuais
+
+### Executar Queries SQL:
+
+```sql
+-- Ver usuários
+SELECT id, name, email, created_at FROM users;
+
+-- Ver transações de um usuário
+SELECT * FROM transactions WHERE user_id = 1 ORDER BY date DESC;
+
+-- Ver limite mensal
+SELECT * FROM user_settings WHERE user_id = 1;
+
+-- Deletar dados de teste
+DELETE FROM transactions WHERE user_id = 1;
+DELETE FROM categories WHERE user_id = 1;
+DELETE FROM user_settings WHERE user_id = 1;
+DELETE FROM users WHERE id = 1;
 ```
 
 ---
 
 ## 🐛 Solução de Problemas
 
-### Erro: "Module not found: better-sqlite3"
+### Erro: "relation users does not exist"
 
-**Solução:** A Vercel precisa compilar o better-sqlite3 nativamente.
+**Causa:** Tabelas não foram criadas no banco.
 
-1. Vá em Project Settings > General
-2. Em "Node.js Version", selecione 18.x
-3. Faça redeploy
+**Solução:**
+1. A aplicação cria as tabelas automaticamente no primeiro acesso
+2. Ou crie manualmente via Query no dashboard:
+   - Vá em Storage > seu banco > Query
+   - Execute o SQL de criação das tabelas (veja `api/db.js`)
 
-### Erro: "Cannot find module 'api/db'"
+### Erro: "Connection string is not defined"
 
-**Solução:** Verifique se todos os arquivos na pasta `api/` usam extensão `.js`
+**Causa:** Variáveis de ambiente do Postgres não configuradas.
 
-### Dados sendo perdidos
+**Solução:**
+1. Vá em Project Settings > Environment Variables
+2. Certifique-se que as variáveis POSTGRES_* estão presentes
+3. Se não estiverem, clique em "Connect Store" e conecte ao banco
 
-**Explicação:** É esperado! O SQLite em serverless é efêmero.
+### Dados não persistem
 
-**Soluções:**
-- Use um banco de dados externo (Supabase, etc)
-- Configure um serviço de backup periódico
-- Migre para PostgreSQL
+**Causa:** Banco não conectado ou credenciais incorretas.
+
+**Solução:**
+1. Verifique logs em Deployments > Functions
+2. Procure por erros de conexão
+3. Confirme que as variáveis POSTGRES_* estão corretas
 
 ### Timeout nas requisições
 
@@ -183,22 +258,22 @@ curl -X POST https://SEU_DOMINIO.vercel.app/api/auth/register \
 ### Ver Logs em Tempo Real:
 
 1. Acesse seu projeto na Vercel
-2. Vá em "Deployments"
+2. Vá em **"Deployments"**
 3. Clique no deployment mais recente
-4. Vá em "Functions" para ver logs das APIs
+4. Vá em **"Functions"** para ver logs das APIs
 
 Ou via CLI:
 ```bash
 vercel logs
 ```
 
-### Métricas:
+### Métricas do Banco:
 
-- Dashboard da Vercel mostra:
-  - Número de requests
-  - Tempo de resposta
-  - Erros
-  - Uso de bandwidth
+1. Vá em **Storage** > seu banco
+2. Veja **"Usage"** para:
+   - Espaço usado
+   - Queries executadas
+   - Conexões ativas
 
 ---
 
@@ -208,13 +283,15 @@ vercel logs
 
 1. **JWT_SECRET forte**: Use no mínimo 32 caracteres aleatórios
 
-2. **Rate Limiting**: Adicione proteção contra força bruta (não incluído neste MVP)
+2. **Limite de conexões**: Vercel Postgres gerencia automaticamente
 
 3. **HTTPS**: A Vercel fornece HTTPS automático ✅
 
 4. **Variáveis de Ambiente**: Nunca commite secrets no Git
 
 5. **CORS**: Configure domínios específicos em produção
+
+6. **Backups**: Configure backups automáticos no dashboard
 
 ---
 
@@ -233,35 +310,26 @@ A Vercel fará deploy automático a cada push! 🎉
 
 ---
 
-## 💾 Migração para Banco Real (Recomendado)
+## 💾 Migração de Dados
 
-### Opção 1: Supabase (PostgreSQL)
+### Exportar dados do SQLite local:
 
-1. Crie conta em https://supabase.com
-2. Crie um novo projeto
-3. Use as credenciais de conexão
-4. Substitua better-sqlite3 por pg
-5. Atualize queries SQL para PostgreSQL
+```bash
+# No diretório backend/
+sqlite3 database/conta-em-paz.db .dump > backup.sql
+```
 
-### Opção 2: PlanetScale (MySQL)
+### Importar para Postgres:
 
-1. Crie conta em https://planetscale.com
-2. Crie um database
-3. Use mysql2 no lugar de better-sqlite3
-4. Atualize queries para MySQL
-
-### Opção 3: MongoDB Atlas
-
-1. Crie conta em https://mongodb.com/atlas
-2. Crie um cluster gratuito
-3. Use mongoose
-4. Reestruture as queries para NoSQL
+1. Converta o SQL do SQLite para Postgres (ajuste sintaxe)
+2. Execute via Query no dashboard da Vercel
 
 ---
 
 ## 📚 Recursos Úteis
 
 - [Documentação Vercel](https://vercel.com/docs)
+- [Vercel Postgres](https://vercel.com/docs/storage/vercel-postgres)
 - [Serverless Functions](https://vercel.com/docs/functions/serverless-functions)
 - [Environment Variables](https://vercel.com/docs/projects/environment-variables)
 - [Limits do Plano Gratuito](https://vercel.com/docs/limits/overview)
@@ -272,13 +340,13 @@ A Vercel fará deploy automático a cada push! 🎉
 
 Antes de considerar "pronto para produção":
 
-- [ ] Migrar para banco de dados persistente
+- [x] Migrar para banco de dados persistente (Vercel Postgres)
 - [ ] Adicionar rate limiting
 - [ ] Implementar logs estruturados
 - [ ] Configurar monitoramento de erros (Sentry)
 - [ ] Adicionar testes automatizados
 - [ ] Configurar CI/CD
-- [ ] Implementar backup de dados
+- [ ] Implementar backup de dados automático
 - [ ] Adicionar recuperação de senha
 - [ ] Configurar domínio customizado
 - [ ] Implementar analytics
@@ -289,9 +357,41 @@ Antes de considerar "pronto para produção":
 
 Problemas com o deploy?
 
-1. Verifique os logs na Vercel
+1. Verifique os logs na Vercel (Deployments > Functions)
 2. Confira se todas as variáveis de ambiente estão configuradas
-3. Teste localmente antes: `npm run build && npm run preview`
+3. Verifique a conexão com o banco em Storage
+4. Teste localmente antes: `npm run build && npm run preview`
+
+---
+
+## 💡 Alternativas ao Vercel Postgres
+
+Se precisar de mais recursos ou preferir outras opções:
+
+### Supabase (PostgreSQL)
+- Plano gratuito: 500MB + 2GB de transferência
+- Inclui autenticação, storage e realtime
+- URL: https://supabase.com
+
+### Neon (PostgreSQL)
+- Plano gratuito: 512MB + auto-suspend
+- Branching de banco de dados
+- URL: https://neon.tech
+
+### PlanetScale (MySQL)
+- Plano gratuito: 5GB + 1 bilhão de leituras
+- Branching de schema
+- URL: https://planetscale.com
+
+### Railway (PostgreSQL/MySQL)
+- $5 de crédito gratuito/mês
+- Deploy de backend também
+- URL: https://railway.app
+
+Para usar estas alternativas:
+1. Crie o banco no serviço escolhido
+2. Adicione a connection string como variável `POSTGRES_URL` (ou `DATABASE_URL`)
+3. Ajuste `api/db.js` se necessário para o formato da connection string
 
 ---
 
