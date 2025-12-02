@@ -1,0 +1,20 @@
+# Ignorar backend standalone
+backend/
+
+# Node modules
+node_modules/
+
+# Arquivos de desenvolvimento
+*.log
+.env.local
+.DS_Store
+
+# Banco de dados local
+database/
+*.db
+*.db-shm
+*.db-wal
+
+# Editor
+.vscode/
+.idea/

@@ -3,6 +3,7 @@ import { Transaction } from '@/types/transaction';
 
 const LOCAL_STORAGE_KEY = 'transactions';
 const CATEGORIES_KEY = 'categories';
+const MONTHLY_LIMIT_KEY = 'monthlyLimit';
 
 const defaultCategories = [
   "Alimentação",
@@ -37,6 +38,16 @@ export const useTransactions = () => {
     }
   });
 
+  const [monthlyLimit, setMonthlyLimit] = useState<number>(() => {
+    try {
+      const storedLimit = localStorage.getItem(MONTHLY_LIMIT_KEY);
+      return storedLimit ? parseFloat(storedLimit) : 0;
+    } catch (error) {
+      console.error("Failed to load monthly limit from localStorage", error);
+      return 0;
+    }
+  });
+
   useEffect(() => {
     try {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(transactions));
@@ -52,6 +63,14 @@ export const useTransactions = () => {
       console.error("Failed to save categories to localStorage", error);
     }
   }, [categories]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(MONTHLY_LIMIT_KEY, monthlyLimit.toString());
+    } catch (error) {
+      console.error("Failed to save monthly limit to localStorage", error);
+    }
+  }, [monthlyLimit]);
 
   const addTransaction = (transaction: Omit<Transaction, 'id'>) => {
     const newTransaction = {
@@ -95,6 +114,10 @@ export const useTransactions = () => {
     );
   };
 
+  const updateMonthlyLimit = (limit: number) => {
+    setMonthlyLimit(limit);
+  };
+
   return {
     transactions,
     addTransaction,
@@ -104,5 +127,7 @@ export const useTransactions = () => {
     addCategory,
     updateCategory,
     deleteCategory,
+    monthlyLimit,
+    updateMonthlyLimit,
   };
 };

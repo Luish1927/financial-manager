@@ -3,14 +3,19 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Transaction } from "@/types/transaction";
 import { CategoriesFilter } from "./CategoriesFilter";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Calendar, CalendarDays } from "lucide-react";
 
 interface FinancialChartProps {
   transactions: Transaction[];
   categories: string[];
 }
 
+type ViewMode = 'monthly' | 'daily';
+
 export const FinancialChart = ({ transactions, categories }: FinancialChartProps) => {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<ViewMode>('monthly');
 
   const handleCategoryChange = (category: string) => {
     setSelectedCategory(category);
@@ -48,13 +53,71 @@ export const FinancialChart = ({ transactions, categories }: FinancialChartProps
     });
   };
 
-  const data = getMonthlyData();
+  const getDailyData = () => {
+    const today = new Date();
+    const daysToShow = 30;
+    const dailyData = [];
+
+    for (let i = daysToShow - 1; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+
+      const dayTransactions = transactions.filter(t => {
+        const transactionDate = new Date(t.date).toISOString().split('T')[0];
+        const categoryMatch = selectedCategory === 'all' || t.category === selectedCategory;
+        return transactionDate === dateStr && categoryMatch;
+      });
+
+      const income = dayTransactions
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      const expenses = dayTransactions
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      dailyData.push({
+        name: `${date.getDate()}/${date.getMonth() + 1}`,
+        Receitas: income,
+        Despesas: expenses,
+      });
+    }
+
+    return dailyData;
+  };
+
+  const data = viewMode === 'monthly' ? getMonthlyData() : getDailyData();
 
   return (
     <Card className="shadow-card bg-gradient-card">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Visão Geral Mensal</CardTitle>
-        <CategoriesFilter categories={categories} onFilterChange={handleCategoryChange} />
+      <CardHeader className="flex flex-col gap-4">
+        <div className="flex flex-row items-center justify-between">
+          <CardTitle>
+            {viewMode === 'monthly' ? 'Visão Geral Mensal' : 'Visão Geral Diária (Últimos 30 dias)'}
+          </CardTitle>
+          <CategoriesFilter categories={categories} onFilterChange={handleCategoryChange} />
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant={viewMode === 'monthly' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('monthly')}
+            className="flex items-center gap-2"
+          >
+            <Calendar className="h-4 w-4" />
+            Mensal
+          </Button>
+          <Button
+            variant={viewMode === 'daily' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('daily')}
+            className="flex items-center gap-2"
+          >
+            <CalendarDays className="h-4 w-4" />
+            Diário
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {data.length > 0 ? (

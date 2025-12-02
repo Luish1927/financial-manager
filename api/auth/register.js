@@ -1,0 +1,69 @@
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import getDatabase from '../db.js';
+import { handleCors } from '../auth-middleware.js';
+
+export default async function handler(req, res) {
+  if (handleCors(req, res)) return;
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Método não permitido' });
+  }
+
+  try {
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: 'Todos os campos são obrigatórios' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'A senha deve ter no mínimo 6 caracteres' });
+    }
+
+    const db = getDatabase();
+
+    const existingUser = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
+    if (existingUser) {
+      return res.status(400).json({ error: 'Email já cadastrado' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const result = db.prepare(
+      'INSERT INTO users (name, email, password) VALUES (?, ?, ?)'
+    ).run(name, email, hashedPassword);
+
+    const userId = result.lastInsertRowid;
+
+    const defaultCategories = [
+      "Alimentação", "Transporte", "Moradia", "Saúde", "Lazer",
+      "Educação", "Salário", "Freelance", "Investimentos"
+    ];
+
+    const insertCategory = db.prepare('INSERT INTO categories (user_id, name) VALUES (?, ?)');
+    const insertMany = db.transaction((categories) => {
+      for (const category of categories) {
+        insertCategory.run(userId, category);
+      }
+    });
+    insertMany(defaultCategories);
+
+    db.prepare('INSERT INTO user_settings (user_id, monthly_limit) VALUES (?, 0)').run(userId);
+
+    const token = jwt.sign(
+      { userId, email },
+      process.env.JWT_SECRET || 'dev_secret_key_change_in_production_2024',
+      { expiresIn: '7d' }
+    );
+
+    res.status(201).json({
+      message: 'Usuário criado com sucesso',
+      token,
+      user: { id: userId, name, email }
+    });
+  } catch (error) {
+    console.error('Erro no registro:', error);
+    res.status(500).json({ error: 'Erro ao criar usuário' });
+  }
+}

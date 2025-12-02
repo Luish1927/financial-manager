@@ -1,73 +1,186 @@
-# Welcome to your Lovable project
+# Conta em Paz - Gerenciador Financeiro
 
-## Project info
+Sistema completo de gerenciamento financeiro pessoal com autenticação de usuários, controle de transações, categorias personalizadas e limite de gastos mensal.
 
-**URL**: https://lovable.dev/projects/0beb78a4-427a-4249-99cd-f7d0c6a96386
+## Funcionalidades
 
-## How can I edit this code?
+- Sistema de autenticação (registro e login)
+- Gestão de transações (receitas e despesas)
+- Categorias personalizadas
+- Limite de gastos mensal com acompanhamento visual
+- Dashboard com visão geral financeira
+- Gráficos de visualização mensal e diária
+- Filtro por categorias
+- Interface responsiva
 
-There are several ways of editing your application.
+## Tecnologias
 
-**Use Lovable**
+### Frontend
+- React 18 + TypeScript
+- Vite (build tool)
+- shadcn/ui + Tailwind CSS
+- Recharts (gráficos)
+- React Hook Form + Zod (formulários)
+- React Router (navegação)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/0beb78a4-427a-4249-99cd-f7d0c6a96386) and start prompting.
+### Backend
+- Node.js + Express
+- SQLite (banco de dados)
+- JWT (autenticação)
+- bcryptjs (criptografia)
 
-Changes made via Lovable will be committed automatically to this repo.
+## Instalação e Execução
 
-**Use your preferred IDE**
+### Pré-requisitos
+- Node.js 18+ instalado
+- npm ou yarn
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### 1. Backend
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+```bash
+# Navegue até a pasta do backend
+cd backend
 
-Follow these steps:
+# Instale as dependências
+npm install
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# Configure as variáveis de ambiente
+cp .env.example .env
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Inicie o servidor (modo desenvolvimento)
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+O backend estará rodando em `http://localhost:3001`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### 2. Frontend
 
-**Use GitHub Codespaces**
+```bash
+# Na raiz do projeto
+npm install
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+# Inicie o servidor de desenvolvimento
+npm run dev
+```
 
-## What technologies are used for this project?
+O frontend estará disponível em `http://localhost:8080`
 
-This project is built with:
+## Primeiro Uso
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+1. Acesse `http://localhost:8080`
+2. Você será redirecionado para a tela de login
+3. Clique em "Criar conta" e preencha os dados
+4. Após o registro, você será automaticamente logado
+5. Comece a adicionar suas transações!
 
-## How can I deploy this project?
+## Estrutura do Projeto
 
-Simply open [Lovable](https://lovable.dev/projects/0beb78a4-427a-4249-99cd-f7d0c6a96386) and click on Share -> Publish.
+```
+conta-em-paz/
+├── backend/              # Servidor Node.js
+│   ├── database/        # Banco de dados SQLite
+│   ├── middleware/      # Middleware de autenticação
+│   ├── routes/          # Rotas da API
+│   └── server.js        # Servidor principal
+├── src/                 # Frontend React
+│   ├── components/      # Componentes React
+│   ├── contexts/        # Context API (Auth)
+│   ├── hooks/           # Custom hooks
+│   ├── pages/           # Páginas/Rotas
+│   └── types/           # TypeScript types
+└── README.md
+```
 
-## Can I connect a custom domain to my Lovable project?
+## API Endpoints
 
-Yes, you can!
+Veja a documentação completa da API em `backend/README.md`
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### Principais endpoints:
+- `POST /api/auth/register` - Criar conta
+- `POST /api/auth/login` - Fazer login
+- `GET /api/transactions` - Listar transações
+- `POST /api/transactions` - Criar transação
+- `GET /api/categories` - Listar categorias
+- `PUT /api/settings/monthly-limit` - Atualizar limite mensal
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## Recursos
+
+- Autenticação JWT com token de 7 dias
+- Dados isolados por usuário
+- Persistência em banco de dados SQLite
+- Validação de formulários
+- Tratamento de erros
+- Toast notifications
+- Interface responsiva
+
+## Desenvolvimento
+
+### Frontend
+```bash
+npm run dev      # Servidor de desenvolvimento
+npm run build    # Build de produção
+npm run preview  # Preview do build
+```
+
+### Backend
+```bash
+npm run dev      # Desenvolvimento com nodemon
+npm start        # Produção
+```
+
+## Deploy
+
+### Deploy Simplificado (Frontend + Backend na Vercel)
+
+Este projeto está configurado para deploy completo na Vercel com backend integrado via Serverless Functions.
+
+**⚠️ IMPORTANTE:** SQLite em ambiente serverless é efêmero. Para produção real, migre para PostgreSQL, MySQL ou MongoDB.
+
+**Guia completo:** Veja [DEPLOY.md](./DEPLOY.md) para instruções detalhadas.
+
+**Quick Start:**
+
+1. Faça push para GitHub/GitLab
+2. Importe projeto na Vercel
+3. Adicione variável de ambiente: `JWT_SECRET=sua_chave_aqui`
+4. Deploy! 🚀
+
+### Deploy Separado (Recomendado para Produção)
+
+**Backend:**
+- Railway (com PostgreSQL)
+- Render (com PostgreSQL)
+- Heroku
+- AWS EC2 + RDS
+
+**Frontend:**
+- Vercel
+- Netlify
+- Lovable (https://lovable.dev/projects/0beb78a4-427a-4249-99cd-f7d0c6a96386)
+- Cloudflare Pages
+
+## Segurança
+
+- Senhas criptografadas com bcrypt
+- Autenticação via JWT
+- Tokens armazenados no localStorage
+- Rotas protegidas no backend
+- Validação de dados no frontend e backend
+
+## Próximos Passos
+
+- Recuperação de senha
+- Exportação de dados (CSV, PDF)
+- Gráficos mais avançados
+- Metas financeiras
+- Notificações de limite
+- Modo escuro
+- PWA (Progressive Web App)
+
+## Licença
+
+MIT
+
+## Lovable Project
+
+**URL**: https://lovable.dev/projects/0beb78a4-427a-4249-99cd-f7d0c6a96386

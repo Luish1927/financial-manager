@@ -4,12 +4,14 @@ import { TransactionList } from "@/components/TransactionList";
 import { FinancialChart } from "@/components/FinancialChart";
 import { TransactionFormDialog } from "@/components/TransactionFormDialog";
 import { Transaction } from "@/types/transaction";
-import { Wallet, Plus, Pencil } from "lucide-react";
-import { useTransactions } from "@/hooks/useTransactions";
+import { Wallet, Plus, Pencil, LogOut } from "lucide-react";
+import { useApi } from "@/hooks/useApi";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { CategoryManagementDialog } from "@/components/CategoryManagementDialog";
 
 const Index = () => {
+  const { user, logout } = useAuth();
   const {
     transactions,
     addTransaction,
@@ -19,7 +21,10 @@ const Index = () => {
     addCategory,
     updateCategory,
     deleteCategory,
-  } = useTransactions();
+    monthlyLimit,
+    updateMonthlyLimit,
+    loading,
+  } = useApi();
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<
@@ -67,7 +72,7 @@ const Index = () => {
               <div>
                 <h1 className="text-2xl font-bold">Gerenciador Financeiro</h1>
                 <p className="text-sm text-muted-foreground">
-                  Controle suas finanças de forma simples
+                  Bem-vindo, {user?.name}!
                 </p>
               </div>
             </div>
@@ -87,28 +92,48 @@ const Index = () => {
                 <Plus className="mr-2 h-4 w-4" />
                 Nova Transação
               </Button>
+              <Button
+                className="shadow-elevated"
+                onClick={logout}
+                variant="outline"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Sair
+              </Button>
             </div>
           </div>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <div className="space-y-6">
-          <Dashboard balance={balance} income={income} expenses={expenses} />
-
-          <div className="grid gap-6 lg:grid-cols-2">
-            <FinancialChart
-              transactions={transactions}
-              categories={categories}
-            />
-            <TransactionList
-              transactions={transactions}
-              onUpdateTransaction={updateTransaction}
-              onDeleteTransaction={deleteTransaction}
-              onEditTransaction={handleOpenEditDialog}
-            />
+        {loading ? (
+          <div className="flex items-center justify-center h-64">
+            <p className="text-muted-foreground">Carregando dados...</p>
           </div>
-        </div>
+        ) : (
+          <div className="space-y-6">
+            <Dashboard
+              balance={balance}
+              income={income}
+              expenses={expenses}
+              monthlyLimit={monthlyLimit}
+              onUpdateMonthlyLimit={updateMonthlyLimit}
+            />
+
+            <div className="grid gap-6 lg:grid-cols-2">
+              <FinancialChart
+                transactions={transactions}
+                categories={categories}
+              />
+              <TransactionList
+                transactions={transactions}
+                onUpdateTransaction={updateTransaction}
+                onDeleteTransaction={deleteTransaction}
+                onEditTransaction={handleOpenEditDialog}
+              />
+            </div>
+          </div>
+        )}
       </main>
 
       <TransactionFormDialog
