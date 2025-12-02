@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { sql, initDatabase } from '../db.js';
+import { sql } from '../db.js';
 import { handleCors } from '../auth-middleware.js';
 
 export default async function handler(req, res) {
@@ -11,7 +11,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    await initDatabase();
 
     const { email, password } = req.body;
 

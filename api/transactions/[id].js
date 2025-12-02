@@ -1,4 +1,4 @@
-import { sql, initDatabase } from '../db.js';
+import { sql } from '../db.js';
 import { authenticateToken, handleCors } from '../auth-middleware.js';
 
 export default async function handler(req, res) {
@@ -12,7 +12,6 @@ export default async function handler(req, res) {
   const { id } = req.query;
 
   try {
-    await initDatabase();
 
     if (req.method === 'PUT') {
       const { type, description, amount, category, date } = req.body;

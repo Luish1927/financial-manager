@@ -1,4 +1,4 @@
-import { sql, initDatabase } from '../db.js';
+import { sql } from '../db.js';
 import { authenticateToken, handleCors } from '../auth-middleware.js';
 
 export default async function handler(req, res) {
@@ -13,7 +13,6 @@ export default async function handler(req, res) {
   const oldName = decodeURIComponent(name);
 
   try {
-    await initDatabase();
 
     if (req.method === 'PUT') {
       const { newName } = req.body;

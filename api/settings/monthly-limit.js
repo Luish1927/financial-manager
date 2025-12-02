@@ -1,4 +1,4 @@
-import { sql, initDatabase } from '../db.js';
+import { sql } from '../db.js';
 import { authenticateToken, handleCors } from '../auth-middleware.js';
 
 export default async function handler(req, res) {
@@ -14,7 +14,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    await initDatabase();
 
     const { monthlyLimit } = req.body;
 
