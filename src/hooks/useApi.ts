@@ -138,7 +138,7 @@ export const useApi = () => {
 
   const updateTransaction = async (transaction: Transaction) => {
     try {
-      const response = await fetch(`${API_URL}/transactions/_id?id=${transaction.id}`, {
+      const response = await fetch(`${API_URL}/transactions/${transaction.id}`, {
         method: 'PUT',
         headers,
         body: JSON.stringify(transaction),
@@ -164,7 +164,7 @@ export const useApi = () => {
 
   const deleteTransaction = async (id: string) => {
     try {
-      const response = await fetch(`${API_URL}/transactions/_id?id=${id}`, {
+      const response = await fetch(`${API_URL}/transactions/${id}`, {
         method: 'DELETE',
         headers,
       });
@@ -211,7 +211,7 @@ export const useApi = () => {
 
   const updateCategory = async (oldCategory: string, newCategory: string) => {
     try {
-      const response = await fetch(`${API_URL}/categories/_name?name=${encodeURIComponent(oldCategory)}`, {
+      const response = await fetch(`${API_URL}/categories/${encodeURIComponent(oldCategory)}`, {
         method: 'PUT',
         headers,
         body: JSON.stringify({ newName: newCategory }),
@@ -242,7 +242,7 @@ export const useApi = () => {
 
   const deleteCategory = async (category: string) => {
     try {
-      const response = await fetch(`${API_URL}/categories/_name?name=${encodeURIComponent(category)}`, {
+      const response = await fetch(`${API_URL}/categories/${encodeURIComponent(category)}`, {
         method: 'DELETE',
         headers,
       });
