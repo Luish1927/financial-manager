@@ -80,14 +80,14 @@ export const CategoryManagementDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="w-[95vw] max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Gerenciar Categorias</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-lg md:text-xl">Gerenciar Categorias</DialogTitle>
+          <DialogDescription className="text-sm">
             Crie, edite ou exclua suas categorias existentes.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
+        <div className="space-y-3 md:space-y-4">
           <div className="flex items-center space-x-2">
             <Input
               value={newCategory}

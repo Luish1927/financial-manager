@@ -85,14 +85,14 @@ export const TransactionFormDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="w-[95vw] max-w-[425px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Editar Transação' : 'Nova Transação'}</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-lg md:text-xl">{isEditing ? 'Editar Transação' : 'Nova Transação'}</DialogTitle>
+          <DialogDescription className="text-sm">
             {isEditing ? 'Edite os detalhes da transação.' : 'Adicione uma nova receita ou despesa ao seu gerenciamento financeiro.'}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3 md:space-y-4">
           <div className="space-y-2">
             <Label htmlFor="type">Tipo</Label>
             <Select value={type} onValueChange={(value: 'income' | 'expense') => {

@@ -63,42 +63,45 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card shadow-card">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
+        <div className="container mx-auto px-4 py-4 md:py-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-gradient-primary">
-                <Wallet className="h-6 w-6 text-primary-foreground" />
+                <Wallet className="h-5 w-5 md:h-6 md:w-6 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold">Gerenciador Financeiro</h1>
-                <p className="text-sm text-muted-foreground">
+                <h1 className="text-lg md:text-2xl font-bold">Gerenciador Financeiro</h1>
+                <p className="text-xs md:text-sm text-muted-foreground">
                   Bem-vindo, {user?.name}!
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 overflow-x-auto">
               <Button
-                className="shadow-elevated"
+                className="shadow-elevated whitespace-nowrap"
                 onClick={() => setIsCategoryDialogOpen(true)}
                 variant="outline"
+                size="sm"
               >
-                <Pencil className="mr-2 h-4 w-4" />
-                Editar Categorias
+                <Pencil className="h-4 w-4 md:mr-2" />
+                <span className="hidden md:inline">Editar Categorias</span>
               </Button>
               <Button
-                className="shadow-elevated"
+                className="shadow-elevated whitespace-nowrap"
                 onClick={handleOpenAddDialog}
+                size="sm"
               >
-                <Plus className="mr-2 h-4 w-4" />
-                Nova Transação
+                <Plus className="h-4 w-4 md:mr-2" />
+                <span className="hidden sm:inline">Nova Transação</span>
               </Button>
               <Button
-                className="shadow-elevated"
+                className="shadow-elevated whitespace-nowrap"
                 onClick={logout}
                 variant="outline"
+                size="sm"
               >
-                <LogOut className="mr-2 h-4 w-4" />
-                Sair
+                <LogOut className="h-4 w-4 md:mr-2" />
+                <span className="hidden md:inline">Sair</span>
               </Button>
             </div>
           </div>
