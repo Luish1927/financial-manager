@@ -2,6 +2,8 @@
 
 Sistema completo de gerenciamento financeiro pessoal com autenticação de usuários, controle de transações, categorias personalizadas e limite de gastos mensal.
 
+🚀 Deploy em produção na Vercel com PostgreSQL (Supabase)
+
 ## Funcionalidades
 
 - Sistema de autenticação (registro e login)
