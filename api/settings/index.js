@@ -1,4 +1,4 @@
-import { sql } from '../db.js';
+import { getSupabase } from '../db.js';
 import { authenticateToken, handleCors } from '../auth-middleware.js';
 
 export default async function handler(req, res) {
@@ -9,21 +9,28 @@ export default async function handler(req, res) {
     return res.status(auth.status).json({ error: auth.error });
   }
 
+  const supabase = getSupabase();
+
   try {
-
     if (req.method === 'GET') {
-      const result = await sql`
-        SELECT monthly_limit FROM user_settings WHERE user_id = ${auth.user.userId}
-      `;
+      const { data, error } = await supabase
+        .from('user_settings')
+        .select('monthly_limit')
+        .eq('user_id', auth.user.userId);
 
-      if (result.rows.length === 0) {
-        await sql`
-          INSERT INTO user_settings (user_id, monthly_limit) VALUES (${auth.user.userId}, 0)
-        `;
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        const { error: insertError } = await supabase
+          .from('user_settings')
+          .insert([{ user_id: auth.user.userId, monthly_limit: 0 }]);
+
+        if (insertError) throw insertError;
+
         return res.json({ monthlyLimit: 0 });
       }
 
-      return res.json({ monthlyLimit: parseFloat(result.rows[0].monthly_limit) });
+      return res.json({ monthlyLimit: parseFloat(data[0].monthly_limit) });
     }
 
     return res.status(405).json({ error: 'Método não permitido' });

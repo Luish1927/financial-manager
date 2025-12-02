@@ -1,4 +1,4 @@
-import { sql } from '../db.js';
+import { getSupabase } from '../db.js';
 import { authenticateToken, handleCors } from '../auth-middleware.js';
 
 export default async function handler(req, res) {
@@ -9,13 +9,19 @@ export default async function handler(req, res) {
     return res.status(auth.status).json({ error: auth.error });
   }
 
-  try {
+  const supabase = getSupabase();
 
+  try {
     if (req.method === 'GET') {
-      const result = await sql`
-        SELECT * FROM categories WHERE user_id = ${auth.user.userId} ORDER BY name ASC
-      `;
-      const categoryNames = result.rows.map(c => c.name);
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .eq('user_id', auth.user.userId)
+        .order('name', { ascending: true });
+
+      if (error) throw error;
+
+      const categoryNames = data.map(c => c.name);
       return res.json(categoryNames);
     }
 
@@ -26,17 +32,24 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Nome da categoria é obrigatório' });
       }
 
-      const existing = await sql`
-        SELECT id FROM categories WHERE user_id = ${auth.user.userId} AND name = ${name}
-      `;
+      const { data: existing, error: checkError } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('user_id', auth.user.userId)
+        .eq('name', name);
 
-      if (existing.rows.length > 0) {
+      if (checkError) throw checkError;
+
+      if (existing && existing.length > 0) {
         return res.status(400).json({ error: 'Categoria já existe' });
       }
 
-      await sql`
-        INSERT INTO categories (user_id, name) VALUES (${auth.user.userId}, ${name})
-      `;
+      const { error: insertError } = await supabase
+        .from('categories')
+        .insert([{ user_id: auth.user.userId, name }]);
+
+      if (insertError) throw insertError;
+
       return res.status(201).json({ name });
     }
 

@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 // Detectar automaticamente se está em produção (Vercel) ou desenvolvimento (localhost)
 const API_URL = import.meta.env.PROD
   ? '/api'  // Em produção, usa o mesmo domínio (Vercel)
-  : 'http://localhost:5173/api';  // Em desenvolvimento, usa Vite proxy para Vercel Dev
+  : 'http://localhost:3000/api';  // Em desenvolvimento, usa Vercel Dev na porta 3000
 
 export const useApi = () => {
   const { token, logout } = useAuth();

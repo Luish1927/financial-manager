@@ -1,4 +1,4 @@
-import { sql } from '../db.js';
+import { getSupabase } from '../db.js';
 import { authenticateToken, handleCors } from '../auth-middleware.js';
 
 export default async function handler(req, res) {
@@ -9,15 +9,20 @@ export default async function handler(req, res) {
     return res.status(auth.status).json({ error: auth.error });
   }
 
-  try {
+  const supabase = getSupabase();
 
+  try {
     if (req.method === 'GET') {
-      const result = await sql`
-        SELECT * FROM transactions
-        WHERE user_id = ${auth.user.userId}
-        ORDER BY date DESC, created_at DESC
-      `;
-      return res.json(result.rows);
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', auth.user.userId)
+        .order('date', { ascending: false })
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      return res.json(data);
     }
 
     if (req.method === 'POST') {
@@ -31,13 +36,22 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Tipo deve ser income ou expense' });
       }
 
-      const result = await sql`
-        INSERT INTO transactions (user_id, type, description, amount, category, date)
-        VALUES (${auth.user.userId}, ${type}, ${description}, ${amount}, ${category}, ${date})
-        RETURNING *
-      `;
+      const { data, error } = await supabase
+        .from('transactions')
+        .insert([{
+          user_id: auth.user.userId,
+          type,
+          description,
+          amount,
+          category,
+          date
+        }])
+        .select()
+        .single();
 
-      return res.status(201).json(result.rows[0]);
+      if (error) throw error;
+
+      return res.status(201).json(data);
     }
 
     return res.status(405).json({ error: 'Método não permitido' });

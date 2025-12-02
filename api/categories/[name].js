@@ -1,4 +1,4 @@
-import { sql } from '../db.js';
+import { getSupabase } from '../db.js';
 import { authenticateToken, handleCors } from '../auth-middleware.js';
 
 export default async function handler(req, res) {
@@ -11,9 +11,9 @@ export default async function handler(req, res) {
 
   const { name } = req.query;
   const oldName = decodeURIComponent(name);
+  const supabase = getSupabase();
 
   try {
-
     if (req.method === 'PUT') {
       const { newName } = req.body;
 
@@ -21,50 +21,70 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Novo nome é obrigatório' });
       }
 
-      const existing = await sql`
-        SELECT id FROM categories WHERE user_id = ${auth.user.userId} AND name = ${oldName}
-      `;
+      const { data: existing, error: checkError } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('user_id', auth.user.userId)
+        .eq('name', oldName);
 
-      if (existing.rows.length === 0) {
+      if (checkError) throw checkError;
+
+      if (!existing || existing.length === 0) {
         return res.status(404).json({ error: 'Categoria não encontrada' });
       }
 
-      const duplicate = await sql`
-        SELECT id FROM categories WHERE user_id = ${auth.user.userId} AND name = ${newName}
-      `;
+      const { data: duplicate, error: dupError } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('user_id', auth.user.userId)
+        .eq('name', newName);
 
-      if (duplicate.rows.length > 0) {
+      if (dupError) throw dupError;
+
+      if (duplicate && duplicate.length > 0) {
         return res.status(400).json({ error: 'Categoria com esse nome já existe' });
       }
 
-      await sql`
-        UPDATE categories SET name = ${newName}
-        WHERE user_id = ${auth.user.userId} AND name = ${oldName}
-      `;
+      const { error: updateCatError } = await supabase
+        .from('categories')
+        .update({ name: newName })
+        .eq('user_id', auth.user.userId)
+        .eq('name', oldName);
 
-      await sql`
-        UPDATE transactions SET category = ${newName}
-        WHERE user_id = ${auth.user.userId} AND category = ${oldName}
-      `;
+      if (updateCatError) throw updateCatError;
+
+      const { error: updateTransError } = await supabase
+        .from('transactions')
+        .update({ category: newName })
+        .eq('user_id', auth.user.userId)
+        .eq('category', oldName);
+
+      if (updateTransError) throw updateTransError;
 
       return res.json({ oldName, newName });
     }
 
     if (req.method === 'DELETE') {
-      const result = await sql`
-        DELETE FROM categories
-        WHERE user_id = ${auth.user.userId} AND name = ${oldName}
-        RETURNING id
-      `;
+      const { data: deleted, error: deleteError } = await supabase
+        .from('categories')
+        .delete()
+        .eq('user_id', auth.user.userId)
+        .eq('name', oldName)
+        .select('id');
 
-      if (result.rows.length === 0) {
+      if (deleteError) throw deleteError;
+
+      if (!deleted || deleted.length === 0) {
         return res.status(404).json({ error: 'Categoria não encontrada' });
       }
 
-      await sql`
-        DELETE FROM transactions
-        WHERE user_id = ${auth.user.userId} AND category = ${oldName}
-      `;
+      const { error: deleteTransError } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('user_id', auth.user.userId)
+        .eq('category', oldName);
+
+      if (deleteTransError) throw deleteTransError;
 
       return res.json({ message: 'Categoria deletada com sucesso' });
     }

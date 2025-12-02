@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { sql } from '../db.js';
+import { getSupabase } from '../db.js';
 import { handleCors } from '../auth-middleware.js';
 
 export default async function handler(req, res) {
@@ -17,14 +17,18 @@ export default async function handler(req, res) {
   }
 
   try {
-
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev_secret_key_change_in_production_2024');
 
-    const result = await sql`
-      SELECT id, name, email FROM users WHERE id = ${decoded.userId}
-    `;
+    const supabase = getSupabase();
 
-    const user = result.rows[0];
+    const { data: users, error } = await supabase
+      .from('users')
+      .select('id, name, email')
+      .eq('id', decoded.userId);
+
+    if (error) throw error;
+
+    const user = users?.[0];
 
     if (!user) {
       return res.status(404).json({ error: 'Usuário não encontrado' });

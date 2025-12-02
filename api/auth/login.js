@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { sql } from '../db.js';
+import { getSupabase } from '../db.js';
 import { handleCors } from '../auth-middleware.js';
 
 export default async function handler(req, res) {
@@ -11,18 +11,22 @@ export default async function handler(req, res) {
   }
 
   try {
-
     const { email, password } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ error: 'Email e senha são obrigatórios' });
     }
 
-    const result = await sql`
-      SELECT * FROM users WHERE email = ${email}
-    `;
+    const supabase = getSupabase();
 
-    const user = result.rows[0];
+    const { data: users, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email);
+
+    if (error) throw error;
+
+    const user = users?.[0];
 
     if (!user) {
       return res.status(401).json({ error: 'Email ou senha incorretos' });

@@ -25,7 +25,7 @@ export const Auth = ({ onLogin }: AuthProps) => {
     setLoading(true);
 
     try {
-      const API_URL = import.meta.env.PROD ? '' : 'http://localhost:3001';
+      const API_URL = import.meta.env.PROD ? '' : 'http://localhost:3000';
       const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
       const body = isLogin
         ? { email: formData.email, password: formData.password }

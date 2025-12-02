@@ -1,4 +1,4 @@
-import { sql } from '../db.js';
+import { getSupabase } from '../db.js';
 import { authenticateToken, handleCors } from '../auth-middleware.js';
 
 export default async function handler(req, res) {
@@ -13,8 +13,9 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Método não permitido' });
   }
 
-  try {
+  const supabase = getSupabase();
 
+  try {
     const { monthlyLimit } = req.body;
 
     if (monthlyLimit === undefined || monthlyLimit === null) {
@@ -25,21 +26,32 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Limite mensal não pode ser negativo' });
     }
 
-    const existing = await sql`
-      SELECT id FROM user_settings WHERE user_id = ${auth.user.userId}
-    `;
+    const { data: existing, error: checkError } = await supabase
+      .from('user_settings')
+      .select('id')
+      .eq('user_id', auth.user.userId);
 
-    if (existing.rows.length > 0) {
-      await sql`
-        UPDATE user_settings
-        SET monthly_limit = ${monthlyLimit}, updated_at = CURRENT_TIMESTAMP
-        WHERE user_id = ${auth.user.userId}
-      `;
+    if (checkError) throw checkError;
+
+    if (existing && existing.length > 0) {
+      const { error: updateError } = await supabase
+        .from('user_settings')
+        .update({
+          monthly_limit: monthlyLimit,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', auth.user.userId);
+
+      if (updateError) throw updateError;
     } else {
-      await sql`
-        INSERT INTO user_settings (user_id, monthly_limit)
-        VALUES (${auth.user.userId}, ${monthlyLimit})
-      `;
+      const { error: insertError } = await supabase
+        .from('user_settings')
+        .insert([{
+          user_id: auth.user.userId,
+          monthly_limit: monthlyLimit
+        }]);
+
+      if (insertError) throw insertError;
     }
 
     return res.json({ monthlyLimit });

@@ -1,4 +1,4 @@
-import { sql } from '../db.js';
+import { getSupabase } from '../db.js';
 import { authenticateToken, handleCors } from '../auth-middleware.js';
 
 export default async function handler(req, res) {
@@ -10,38 +10,54 @@ export default async function handler(req, res) {
   }
 
   const { id } = req.query;
+  const supabase = getSupabase();
 
   try {
-
     if (req.method === 'PUT') {
       const { type, description, amount, category, date } = req.body;
 
-      const existing = await sql`
-        SELECT id FROM transactions WHERE id = ${id} AND user_id = ${auth.user.userId}
-      `;
+      const { data: existing, error: checkError } = await supabase
+        .from('transactions')
+        .select('id')
+        .eq('id', id)
+        .eq('user_id', auth.user.userId);
 
-      if (existing.rows.length === 0) {
+      if (checkError) throw checkError;
+
+      if (!existing || existing.length === 0) {
         return res.status(404).json({ error: 'Transação não encontrada' });
       }
 
-      const result = await sql`
-        UPDATE transactions
-        SET type = ${type}, description = ${description}, amount = ${amount},
-            category = ${category}, date = ${date}
-        WHERE id = ${id} AND user_id = ${auth.user.userId}
-        RETURNING *
-      `;
+      const { data, error: updateError } = await supabase
+        .from('transactions')
+        .update({
+          type,
+          description,
+          amount,
+          category,
+          date
+        })
+        .eq('id', id)
+        .eq('user_id', auth.user.userId)
+        .select()
+        .single();
 
-      return res.json(result.rows[0]);
+      if (updateError) throw updateError;
+
+      return res.json(data);
     }
 
     if (req.method === 'DELETE') {
-      const result = await sql`
-        DELETE FROM transactions WHERE id = ${id} AND user_id = ${auth.user.userId}
-        RETURNING id
-      `;
+      const { data: deleted, error: deleteError } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', auth.user.userId)
+        .select('id');
 
-      if (result.rows.length === 0) {
+      if (deleteError) throw deleteError;
+
+      if (!deleted || deleted.length === 0) {
         return res.status(404).json({ error: 'Transação não encontrada' });
       }
 

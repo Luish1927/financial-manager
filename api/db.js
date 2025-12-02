@@ -1,14 +1,41 @@
+import { createClient } from '@supabase/supabase-js';
 import pg from 'pg';
+
 const { Pool } = pg;
 
+let supabase;
 let pool;
 
+// Inicializar Supabase Client (via HTTPS - funciona em qualquer rede)
+export const getSupabase = () => {
+  if (!supabase) {
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY devem estar definidas');
+    }
+
+    supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    });
+
+    console.log('✅ Supabase Client inicializado via HTTPS');
+  }
+  return supabase;
+};
+
+// Fallback: Pool PostgreSQL direto (para quando HTTPS funcionar)
 export const getPool = () => {
   if (!pool) {
     const connectionString = process.env.DATABASE_URL;
 
     if (!connectionString) {
-      throw new Error('DATABASE_URL não definida nas variáveis de ambiente');
+      // Se não tiver DATABASE_URL, não inicializa pool
+      return null;
     }
 
     pool = new Pool({
@@ -25,19 +52,18 @@ export const getPool = () => {
       console.error('Erro inesperado no pool de conexões:', err);
     });
 
-    console.log('Pool de conexões PostgreSQL inicializado');
+    console.log('✅ Pool PostgreSQL inicializado');
   }
   return pool;
 };
 
+// Helper para executar SQL - tenta PostgreSQL direto primeiro, senão usa Supabase
 export const sql = async (strings, ...values) => {
-  const client = getPool();
+  // Construir query e params
+  let query = '';
+  const params = [];
 
-  // Se for um template literal, construir a query
   if (Array.isArray(strings) && strings.raw) {
-    let query = '';
-    const params = [];
-
     for (let i = 0; i < strings.length; i++) {
       query += strings[i];
       if (i < values.length) {
@@ -45,10 +71,23 @@ export const sql = async (strings, ...values) => {
         query += `$${params.length}`;
       }
     }
-
-    return await client.query(query, params);
+  } else {
+    query = strings;
   }
 
-  // Se for uma query simples (string)
-  return await client.query(strings, values);
+  // Tentar usar Pool PostgreSQL direto
+  const pgPool = getPool();
+  if (pgPool) {
+    try {
+      return await pgPool.query(query, params);
+    } catch (error) {
+      console.warn('⚠️ Falha ao usar PostgreSQL direto, tentando via Supabase Client...');
+      console.warn('Erro:', error.message);
+    }
+  }
+
+  // Fallback: Usar Supabase Client para queries específicas
+  // Como não dá para executar SQL direto, vamos precisar usar os métodos do Supabase
+  // Por enquanto, retorna erro para sabermos que queries precisam ser reescritas
+  throw new Error('Conexão PostgreSQL falhou. Use métodos do Supabase Client diretamente.');
 };
