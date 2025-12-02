@@ -116,6 +116,7 @@ export const TransactionFormDialog = ({
               placeholder="Ex: Supermercado"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              autoComplete="off"
             />
           </div>
 
@@ -128,6 +129,7 @@ export const TransactionFormDialog = ({
               placeholder="0,00"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
+              autoComplete="off"
             />
           </div>
 
@@ -154,6 +156,7 @@ export const TransactionFormDialog = ({
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
+              autoComplete="off"
             />
           </div>
 

@@ -94,6 +94,7 @@ export const Auth = ({ onLogin }: AuthProps) => {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required={!isLogin}
+                  autoComplete="name"
                 />
               </div>
             )}
@@ -107,6 +108,7 @@ export const Auth = ({ onLogin }: AuthProps) => {
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 required
+                autoComplete="email"
               />
             </div>
 
@@ -120,6 +122,7 @@ export const Auth = ({ onLogin }: AuthProps) => {
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 required
                 minLength={6}
+                autoComplete={isLogin ? "current-password" : "new-password"}
               />
               {!isLogin && (
                 <p className="text-xs text-muted-foreground">

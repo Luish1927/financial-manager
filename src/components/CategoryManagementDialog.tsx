@@ -93,6 +93,7 @@ export const CategoryManagementDialog = ({
               value={newCategory}
               onChange={(e) => setNewCategory(e.target.value)}
               placeholder="Nova categoria"
+              autoComplete="off"
             />
             <Button onClick={handleAddCategory} size="icon">
               <Plus className="h-4 w-4" />
@@ -109,6 +110,7 @@ export const CategoryManagementDialog = ({
                     value={newCategoryName}
                     onChange={(e) => setNewCategoryName(e.target.value)}
                     className="h-8"
+                    autoComplete="off"
                   />
                 </div>
               ) : (
