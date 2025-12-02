@@ -1,76 +1,157 @@
-# 🚀 Guia de Deploy na Vercel
+# 🚀 Guia de Deploy na Vercel com Supabase
 
-Este guia mostra como fazer o deploy do **Conta em Paz** na Vercel com backend e frontend integrados usando Vercel Postgres.
+Este guia mostra como fazer o deploy do **Conta em Paz** na Vercel com backend e frontend integrados usando Supabase como banco de dados.
 
 ## ⚠️ Sobre este Setup
 
-Este projeto usa Vercel Postgres, um banco de dados PostgreSQL gerenciado pela Vercel, ideal para:
-- Demonstrações
+Este projeto usa Supabase, uma plataforma de banco de dados PostgreSQL open-source, ideal para:
+- Aplicações em produção
 - MVPs
-- Testes
-- Protótipos
+- Projetos escaláveis
+- Desenvolvimento rápido
 
 **Características:**
-- ✅ Banco de dados persistente (não efêmero como SQLite)
+- ✅ Banco de dados PostgreSQL gerenciado
 - ✅ Backup automático
-- ✅ Sem preocupações com compilação de módulos nativos
+- ✅ Autenticação integrada (não usado neste projeto)
+- ✅ Row Level Security (RLS)
 - ✅ Escalável
 
-**Plano gratuito:** 256MB de armazenamento, 60 horas de computação/mês
+**Plano gratuito:** 500MB de banco de dados, 2GB de bandwidth/mês
 
 ---
 
 ## 📋 Pré-requisitos
 
 1. Conta na Vercel (gratuita): https://vercel.com
-2. Repositório Git do projeto (GitHub, GitLab ou Bitbucket)
-3. Git instalado localmente
+2. Conta no Supabase (gratuita): https://supabase.com
+3. Repositório Git do projeto (GitHub, GitLab ou Bitbucket)
+4. Git instalado localmente
 
 ---
 
 ## 🔧 Passo 1: Preparar o Repositório
 
-### 1.1 Fazer commit das alterações
+### 1.1 Instalar dependências atualizadas
+
+```bash
+npm install
+```
+
+### 1.2 Fazer commit das alterações
 
 ```bash
 git add .
-git commit -m "feat: adicionar suporte para deploy na Vercel com Postgres"
+git commit -m "feat: configurar deploy com Supabase"
 git push origin main
 ```
 
-### 1.2 Verificar arquivos importantes
+### 1.3 Verificar arquivos importantes
 
 Certifique-se que estes arquivos existem:
 - ✅ `vercel.json` (configuração da Vercel)
-- ✅ `package.json` (com @vercel/postgres nas dependências)
+- ✅ `package.json` (com `pg` nas dependências)
 - ✅ Pasta `api/` (funções serverless)
+- ✅ `.env.example` (modelo de variáveis de ambiente)
 
 ---
 
-## 🗄️ Passo 2: Criar Banco de Dados Vercel Postgres
+## 🗄️ Passo 2: Configurar Banco de Dados no Supabase
 
-### 2.1 Via Dashboard da Vercel
+### 2.1 Criar Projeto no Supabase
 
-1. Acesse https://vercel.com/dashboard
-2. Clique em **"Storage"** no menu lateral
-3. Clique em **"Create Database"**
-4. Escolha **"Postgres"**
-5. Digite um nome para o banco (ex: `conta-em-paz-db`)
-6. Escolha a região mais próxima de você
-7. Clique em **"Create"**
+1. Acesse https://supabase.com e faça login
+2. Clique em **"New Project"**
+3. Escolha uma organização ou crie uma nova
+4. Preencha:
+   - **Name:** `conta-em-paz` (ou nome de sua preferência)
+   - **Database Password:** Crie uma senha forte (anote!)
+   - **Region:** Escolha a mais próxima (ex: South America)
+5. Clique em **"Create new project"**
+6. Aguarde ~2 minutos enquanto o projeto é provisionado
 
-### 2.2 Importante
+### 2.2 Obter Connection String
 
-A Vercel criará automaticamente as variáveis de ambiente:
-- `POSTGRES_URL`
-- `POSTGRES_PRISMA_URL`
-- `POSTGRES_URL_NON_POOLING`
-- `POSTGRES_USER`
-- `POSTGRES_HOST`
-- `POSTGRES_PASSWORD`
-- `POSTGRES_DATABASE`
+1. No dashboard do projeto, vá em **Settings** → **Database**
+2. Role até **Connection String**
+3. Selecione a aba **URI**
+4. Copie a connection string (formato: `postgresql://postgres:[YOUR-PASSWORD]@...`)
+5. **Substitua `[YOUR-PASSWORD]` pela senha que você criou**
 
-Essas variáveis serão injetadas automaticamente nas suas funções serverless! ✅
+Exemplo:
+```
+postgresql://postgres:suaSenhaForte123@db.xxxxxxxxxxxx.supabase.co:5432/postgres
+```
+
+### 2.3 Criar as Tabelas
+
+1. No dashboard do Supabase, vá em **SQL Editor**
+2. Clique em **New Query**
+3. Cole o SQL abaixo e clique em **Run**:
+
+```sql
+-- Criar tabela users
+CREATE TABLE IF NOT EXISTS users (
+  id BIGSERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  password TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Criar tabela categories
+CREATE TABLE IF NOT EXISTS categories (
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  name TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  UNIQUE(user_id, name)
+);
+
+-- Criar tabela transactions
+CREATE TABLE IF NOT EXISTS transactions (
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  type TEXT NOT NULL CHECK(type IN ('income', 'expense')),
+  description TEXT NOT NULL,
+  amount NUMERIC NOT NULL,
+  category TEXT NOT NULL,
+  date TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Criar tabela user_settings
+CREATE TABLE IF NOT EXISTS user_settings (
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT UNIQUE NOT NULL,
+  monthly_limit NUMERIC DEFAULT 0,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Habilitar RLS (Row Level Security)
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_settings ENABLE ROW LEVEL SECURITY;
+
+-- Criar políticas para permitir acesso via service role
+CREATE POLICY "Service role can do anything on users" ON users FOR ALL
+USING (true);
+
+CREATE POLICY "Service role can do anything on categories" ON categories
+FOR ALL USING (true);
+
+CREATE POLICY "Service role can do anything on transactions" ON
+transactions FOR ALL USING (true);
+
+CREATE POLICY "Service role can do anything on user_settings" ON
+user_settings FOR ALL USING (true);
+```
+
+4. Verifique se as tabelas foram criadas em **Table Editor**
 
 ---
 
@@ -96,22 +177,25 @@ Essas variáveis serão injetadas automaticamente nas suas funções serverless!
 
    | Name | Value |
    |------|-------|
-   | `JWT_SECRET` | `sua_chave_secreta_super_segura_mude_aqui` |
+   | `DATABASE_URL` | Cole a connection string do Supabase (Passo 2.2) |
+   | `JWT_SECRET` | Gere uma chave forte (comando abaixo) |
    | `NODE_ENV` | `production` |
 
-   ⚠️ **IMPORTANTE:** Crie uma chave JWT_SECRET forte e única!
+   ⚠️ **IMPORTANTE:**
+   - A `DATABASE_URL` é a connection string completa do Supabase com sua senha
+   - Crie uma chave `JWT_SECRET` forte e única!
 
-   Você pode gerar uma com:
+   Gere uma chave JWT_SECRET com:
    ```bash
    node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
    ```
 
-6. **Conectar ao Banco de Dados:**
-
-   - Na mesma tela de "Environment Variables"
-   - Clique em **"Connect Store"** (ou "Add")
-   - Selecione o banco Postgres que você criou no Passo 2
-   - As variáveis do Postgres serão adicionadas automaticamente!
+   Exemplo de variáveis:
+   ```
+   DATABASE_URL=postgresql://postgres:suaSenha@db.xxx.supabase.co:5432/postgres
+   JWT_SECRET=a1b2c3d4e5f6...
+   NODE_ENV=production
+   ```
 
 7. Clique em **"Deploy"**
 
@@ -186,14 +270,13 @@ curl -X POST https://SEU_DOMINIO.vercel.app/api/auth/login \
 
 ## 🗄️ Gerenciar Banco de Dados
 
-### Via Dashboard da Vercel
+### Via Dashboard do Supabase
 
-1. Vá em **Storage** > seu banco Postgres
-2. Clique em **"Data"** para ver tabelas e dados
-3. Clique em **"Query"** para executar SQL
-4. Use **"Backups"** para criar/restaurar backups manuais
+1. Vá em **Table Editor** para ver e editar dados das tabelas
+2. Vá em **SQL Editor** para executar queries SQL
+3. Vá em **Database** > **Backups** para gerenciar backups (apenas no plano pago)
 
-### Executar Queries SQL:
+### Executar Queries SQL no Supabase:
 
 ```sql
 -- Ver usuários
@@ -216,33 +299,51 @@ DELETE FROM users WHERE id = 1;
 
 ## 🐛 Solução de Problemas
 
+### ⚠️ Erro: "Server error (HTTP status 404): Not Found" (NeonDbError)
+
+**Causa:** Estava usando `@vercel/postgres` ao invés de biblioteca compatível com Supabase.
+
+**Solução:** ✅ **JÁ CORRIGIDO!** Agora o projeto usa a biblioteca `pg` que é compatível com Supabase.
+- Execute `npm install` para atualizar as dependências
+- Faça commit e push das alterações
+- Reconfigure o deploy na Vercel com a variável `DATABASE_URL`
+
+### Erro: "DATABASE_URL não definida"
+
+**Causa:** Variável de ambiente `DATABASE_URL` não configurada na Vercel.
+
+**Solução:**
+1. Vá em Project Settings > Environment Variables na Vercel
+2. Adicione a variável `DATABASE_URL` com a connection string do Supabase
+3. Redeploy o projeto
+
 ### Erro: "relation users does not exist"
 
-**Causa:** Tabelas não foram criadas no banco.
+**Causa:** Tabelas não foram criadas no Supabase.
 
 **Solução:**
-1. A aplicação cria as tabelas automaticamente no primeiro acesso
-2. Ou crie manualmente via Query no dashboard:
-   - Vá em Storage > seu banco > Query
-   - Execute o SQL de criação das tabelas (veja `api/db.js`)
+1. Execute o SQL fornecido no Passo 2.3 no SQL Editor do Supabase
+2. Verifique se as tabelas foram criadas em **Table Editor**
+3. A aplicação também tenta criar as tabelas automaticamente no primeiro acesso
 
-### Erro: "Connection string is not defined"
+### Erro: "password authentication failed"
 
-**Causa:** Variáveis de ambiente do Postgres não configuradas.
+**Causa:** Senha incorreta na connection string.
 
 **Solução:**
-1. Vá em Project Settings > Environment Variables
-2. Certifique-se que as variáveis POSTGRES_* estão presentes
-3. Se não estiverem, clique em "Connect Store" e conecte ao banco
+1. Verifique se substituiu `[YOUR-PASSWORD]` pela senha real do Supabase
+2. Confira a senha em Settings > Database no Supabase
+3. Se necessário, resete a senha do banco de dados
 
 ### Dados não persistem
 
 **Causa:** Banco não conectado ou credenciais incorretas.
 
 **Solução:**
-1. Verifique logs em Deployments > Functions
+1. Verifique logs em Deployments > Functions na Vercel
 2. Procure por erros de conexão
-3. Confirme que as variáveis POSTGRES_* estão corretas
+3. Confirme que a variável `DATABASE_URL` está correta
+4. Teste a connection string localmente
 
 ### Timeout nas requisições
 
@@ -267,13 +368,13 @@ Ou via CLI:
 vercel logs
 ```
 
-### Métricas do Banco:
+### Métricas do Banco no Supabase:
 
-1. Vá em **Storage** > seu banco
-2. Veja **"Usage"** para:
-   - Espaço usado
-   - Queries executadas
-   - Conexões ativas
+1. Vá em **Settings** > **Usage**
+2. Veja métricas de:
+   - Database size
+   - Bandwidth utilizado
+   - API requests
 
 ---
 
@@ -364,14 +465,9 @@ Problemas com o deploy?
 
 ---
 
-## 💡 Alternativas ao Vercel Postgres
+## 💡 Alternativas ao Supabase
 
-Se precisar de mais recursos ou preferir outras opções:
-
-### Supabase (PostgreSQL)
-- Plano gratuito: 500MB + 2GB de transferência
-- Inclui autenticação, storage e realtime
-- URL: https://supabase.com
+Se preferir outras opções de banco de dados PostgreSQL:
 
 ### Neon (PostgreSQL)
 - Plano gratuito: 512MB + auto-suspend
@@ -388,10 +484,16 @@ Se precisar de mais recursos ou preferir outras opções:
 - Deploy de backend também
 - URL: https://railway.app
 
+### Vercel Postgres
+- Plano gratuito: 256MB + 60 horas de computação/mês
+- Integrado com Vercel
+- URL: https://vercel.com/storage/postgres
+
 Para usar estas alternativas:
 1. Crie o banco no serviço escolhido
-2. Adicione a connection string como variável `POSTGRES_URL` (ou `DATABASE_URL`)
-3. Ajuste `api/db.js` se necessário para o formato da connection string
+2. Obtenha a connection string PostgreSQL
+3. Configure a variável `DATABASE_URL` na Vercel com a nova connection string
+4. O código já está compatível com qualquer PostgreSQL via biblioteca `pg`
 
 ---
 
