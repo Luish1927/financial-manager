@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Transaction } from "@/types/transaction";
-import { ArrowDownCircle, ArrowUpCircle, MoreHorizontal } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, MoreHorizontal, History } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,17 +16,23 @@ interface TransactionListProps {
   onUpdateTransaction: (transaction: Transaction) => void;
   onDeleteTransaction: (id: string) => void;
   onEditTransaction: (transaction: Transaction) => void;
+  onOpenHistory: () => void;
 }
 
 export const TransactionList = ({
   transactions,
   onDeleteTransaction,
   onEditTransaction,
+  onOpenHistory,
 }: TransactionListProps) => {
   return (
     <Card className="shadow-card bg-gradient-card">
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <CardTitle>Transações de Hoje</CardTitle>
+        <Button variant="ghost" size="icon" onClick={onOpenHistory}>
+            <History className="h-5 w-5 text-muted-foreground" />
+            <span className="sr-only">Ver histórico</span>
+        </Button>
       </CardHeader>
       <CardContent>
         <div className="space-y-4 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">

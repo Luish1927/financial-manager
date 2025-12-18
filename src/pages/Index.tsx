@@ -3,6 +3,7 @@ import { Dashboard } from "@/components/Dashboard";
 import { TransactionList } from "@/components/TransactionList";
 import { FinancialChart } from "@/components/FinancialChart";
 import { TransactionFormDialog } from "@/components/TransactionFormDialog";
+import { TransactionHistoryDialog } from "@/components/TransactionHistoryDialog";
 import { Transaction } from "@/types/transaction";
 import { Wallet, Plus, Pencil, LogOut } from "lucide-react";
 import { useApi } from "@/hooks/useApi";
@@ -37,6 +38,7 @@ const Index = () => {
 
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
+  const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<
     Transaction | undefined
   >(undefined);
@@ -143,6 +145,7 @@ const Index = () => {
                 onUpdateTransaction={updateTransaction}
                 onDeleteTransaction={deleteTransaction}
                 onEditTransaction={handleOpenEditDialog}
+                onOpenHistory={() => setIsHistoryDialogOpen(true)}
               />
             </div>
           </div>
@@ -163,6 +166,14 @@ const Index = () => {
         addCategory={addCategory}
         updateCategory={updateCategory}
         deleteCategory={deleteCategory}
+      />
+      <TransactionHistoryDialog
+        open={isHistoryDialogOpen}
+        onOpenChange={setIsHistoryDialogOpen}
+        transactions={transactions}
+        onUpdateTransaction={updateTransaction}
+        onDeleteTransaction={deleteTransaction}
+        onEditTransaction={handleOpenEditDialog}
       />
     </div>
   );
