@@ -26,13 +26,13 @@ export const TransactionList = ({
   return (
     <Card className="shadow-card bg-gradient-card">
       <CardHeader>
-        <CardTitle>Transações Recentes</CardTitle>
+        <CardTitle>Transações de Hoje</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
+        <div className="space-y-4 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
           {transactions.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">
-              Nenhuma transação cadastrada ainda.
+              Nenhuma transação cadastrada hoje.
             </p>
           ) : (
             transactions.map((transaction) => (

@@ -25,6 +25,16 @@ const Index = () => {
     updateMonthlyLimit,
     loading,
   } = useApi();
+
+  // Get today's date in YYYY-MM-DD format based on local time to match input[type="date"] format
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  const todayString = `${year}-${month}-${day}`;
+
+  const todaysTransactions = transactions.filter((t) => t.date === todayString);
+
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<
@@ -129,7 +139,7 @@ const Index = () => {
                 categories={categories}
               />
               <TransactionList
-                transactions={transactions}
+                transactions={todaysTransactions}
                 onUpdateTransaction={updateTransaction}
                 onDeleteTransaction={deleteTransaction}
                 onEditTransaction={handleOpenEditDialog}
