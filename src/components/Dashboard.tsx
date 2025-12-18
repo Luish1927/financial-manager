@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { formatCurrency } from "@/lib/utils";
 
 interface DashboardProps {
   balance: number;
@@ -52,10 +53,7 @@ export const Dashboard = ({
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-primary-foreground">
-              {new Intl.NumberFormat('pt-BR', {
-                style: 'currency',
-                currency: 'BRL'
-              }).format(balance)}
+              {formatCurrency(balance)}
             </div>
           </CardContent>
         </Card>
@@ -71,10 +69,7 @@ export const Dashboard = ({
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-success">
-              {new Intl.NumberFormat('pt-BR', {
-                style: 'currency',
-                currency: 'BRL'
-              }).format(income)}
+              {formatCurrency(income)}
             </div>
           </CardContent>
         </Card>
@@ -90,10 +85,7 @@ export const Dashboard = ({
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-destructive">
-              {new Intl.NumberFormat('pt-BR', {
-                style: 'currency',
-                currency: 'BRL'
-              }).format(expenses)}
+              {formatCurrency(expenses)}
             </div>
           </CardContent>
         </Card>
@@ -124,10 +116,7 @@ export const Dashboard = ({
             {monthlyLimit > 0 ? (
               <div className="space-y-2">
                 <div className={`text-2xl font-bold ${isOverBudget ? 'text-destructive' : 'text-primary'}`}>
-                  {new Intl.NumberFormat('pt-BR', {
-                    style: 'currency',
-                    currency: 'BRL'
-                  }).format(remainingBudget)}
+                  {formatCurrency(remainingBudget)}
                 </div>
                 <div className="space-y-1">
                   <Progress

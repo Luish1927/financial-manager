@@ -6,6 +6,7 @@ import { CategoriesFilter } from "./CategoriesFilter";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar, CalendarDays } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
 
 interface FinancialChartProps {
   transactions: Transaction[];
@@ -22,6 +23,25 @@ export const FinancialChart = ({ transactions, categories }: FinancialChartProps
     setSelectedCategory(category);
   };
 
+  // Helper: verifica se uma transação pertence à categoria selecionada
+  const matchesCategory = (transaction: Transaction): boolean => {
+    return selectedCategory === 'all' || transaction.category === selectedCategory;
+  };
+
+  // Helper: calcula o total de receitas de uma lista de transações
+  const calculateIncome = (transactions: Transaction[]): number => {
+    return transactions
+      .filter(t => t.type === 'income')
+      .reduce((sum, t) => sum + t.amount, 0);
+  };
+
+  // Helper: calcula o total de despesas de uma lista de transações
+  const calculateExpenses = (transactions: Transaction[]): number => {
+    return transactions
+      .filter(t => t.type === 'expense')
+      .reduce((sum, t) => sum + t.amount, 0);
+  };
+
   const getMonthlyData = () => {
     const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
     const currentMonth = new Date().getMonth();
@@ -34,17 +54,11 @@ export const FinancialChart = ({ transactions, categories }: FinancialChartProps
       const monthIndex = (currentMonth - 5 + index + 12) % 12;
       const monthTransactions = transactions.filter(t => {
         const transactionMonth = new Date(t.date).getMonth();
-        const categoryMatch = selectedCategory === 'all' || t.category === selectedCategory;
-        return transactionMonth === monthIndex && categoryMatch;
+        return transactionMonth === monthIndex && matchesCategory(t);
       });
 
-      const income = monthTransactions
-        .filter(t => t.type === 'income')
-        .reduce((sum, t) => sum + t.amount, 0);
-
-      const expenses = monthTransactions
-        .filter(t => t.type === 'expense')
-        .reduce((sum, t) => sum + t.amount, 0);
+      const income = calculateIncome(monthTransactions);
+      const expenses = calculateExpenses(monthTransactions);
 
       return {
         name: month,
@@ -66,17 +80,11 @@ export const FinancialChart = ({ transactions, categories }: FinancialChartProps
 
       const dayTransactions = transactions.filter(t => {
         const transactionDate = new Date(t.date).toISOString().split('T')[0];
-        const categoryMatch = selectedCategory === 'all' || t.category === selectedCategory;
-        return transactionDate === dateStr && categoryMatch;
+        return transactionDate === dateStr && matchesCategory(t);
       });
 
-      const income = dayTransactions
-        .filter(t => t.type === 'income')
-        .reduce((sum, t) => sum + t.amount, 0);
-
-      const expenses = dayTransactions
-        .filter(t => t.type === 'expense')
-        .reduce((sum, t) => sum + t.amount, 0);
+      const income = calculateIncome(dayTransactions);
+      const expenses = calculateExpenses(dayTransactions);
 
       dailyData.push({
         name: `${date.getDate()}/${date.getMonth() + 1}`,
@@ -133,10 +141,7 @@ export const FinancialChart = ({ transactions, categories }: FinancialChartProps
                     ? ` (${props.payload.category})`
                     : "";
                   return [
-                    new Intl.NumberFormat("pt-BR", {
-                      style: "currency",
-                      currency: "BRL",
-                    }).format(value),
+                    formatCurrency(value),
                     name + category,
                   ];
                 }}

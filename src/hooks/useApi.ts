@@ -43,6 +43,17 @@ export const useApi = () => {
     return data;
   };
 
+  // Helper: mostra notificação de erro (exceto para sessão expirada)
+  const showErrorToast = (message: string, error: any) => {
+    if (error.message !== 'Sessão expirada') {
+      toast({
+        title: "Erro",
+        description: message,
+        variant: "destructive",
+      });
+    }
+  };
+
   // Carregar dados iniciais
   useEffect(() => {
     if (token) {
@@ -71,13 +82,7 @@ export const useApi = () => {
       const data = await handleResponse(response);
       setTransactions(data);
     } catch (error: any) {
-      if (error.message !== 'Sessão expirada') {
-        toast({
-          title: "Erro",
-          description: "Erro ao carregar transações",
-          variant: "destructive",
-        });
-      }
+      showErrorToast("Erro ao carregar transações", error);
     }
   };
 
@@ -87,13 +92,7 @@ export const useApi = () => {
       const data = await handleResponse(response);
       setCategories(data);
     } catch (error: any) {
-      if (error.message !== 'Sessão expirada') {
-        toast({
-          title: "Erro",
-          description: "Erro ao carregar categorias",
-          variant: "destructive",
-        });
-      }
+      showErrorToast("Erro ao carregar categorias", error);
     }
   };
 
@@ -103,13 +102,7 @@ export const useApi = () => {
       const data = await handleResponse(response);
       setMonthlyLimit(data.monthlyLimit);
     } catch (error: any) {
-      if (error.message !== 'Sessão expirada') {
-        toast({
-          title: "Erro",
-          description: "Erro ao carregar configurações",
-          variant: "destructive",
-        });
-      }
+      showErrorToast("Erro ao carregar configurações", error);
     }
   };
 
@@ -127,13 +120,7 @@ export const useApi = () => {
         description: "Transação adicionada com sucesso",
       });
     } catch (error: any) {
-      if (error.message !== 'Sessão expirada') {
-        toast({
-          title: "Erro",
-          description: "Erro ao adicionar transação",
-          variant: "destructive",
-        });
-      }
+      showErrorToast("Erro ao adicionar transação", error);
     }
   };
 
@@ -153,13 +140,7 @@ export const useApi = () => {
         description: "Transação atualizada com sucesso",
       });
     } catch (error: any) {
-      if (error.message !== 'Sessão expirada') {
-        toast({
-          title: "Erro",
-          description: "Erro ao atualizar transação",
-          variant: "destructive",
-        });
-      }
+      showErrorToast("Erro ao atualizar transação", error);
     }
   };
 
@@ -176,13 +157,7 @@ export const useApi = () => {
         description: "Transação deletada com sucesso",
       });
     } catch (error: any) {
-      if (error.message !== 'Sessão expirada') {
-        toast({
-          title: "Erro",
-          description: "Erro ao deletar transação",
-          variant: "destructive",
-        });
-      }
+      showErrorToast("Erro ao deletar transação", error);
     }
   };
 
@@ -200,13 +175,7 @@ export const useApi = () => {
         description: "Categoria adicionada com sucesso",
       });
     } catch (error: any) {
-      if (error.message !== 'Sessão expirada') {
-        toast({
-          title: "Erro",
-          description: "Erro ao adicionar categoria",
-          variant: "destructive",
-        });
-      }
+      showErrorToast("Erro ao adicionar categoria", error);
     }
   };
 
@@ -245,13 +214,7 @@ export const useApi = () => {
         description: "Categoria atualizada com sucesso",
       });
     } catch (error: any) {
-      if (error.message !== 'Sessão expirada') {
-        toast({
-          title: "Erro",
-          description: "Erro ao atualizar categoria",
-          variant: "destructive",
-        });
-      }
+      showErrorToast("Erro ao atualizar categoria", error);
     }
   };
 
@@ -279,13 +242,7 @@ export const useApi = () => {
         description: "Categoria deletada com sucesso",
       });
     } catch (error: any) {
-      if (error.message !== 'Sessão expirada') {
-        toast({
-          title: "Erro",
-          description: "Erro ao deletar categoria",
-          variant: "destructive",
-        });
-      }
+      showErrorToast("Erro ao deletar categoria", error);
     }
   };
 
@@ -303,13 +260,7 @@ export const useApi = () => {
         description: "Limite mensal atualizado com sucesso",
       });
     } catch (error: any) {
-      if (error.message !== 'Sessão expirada') {
-        toast({
-          title: "Erro",
-          description: "Erro ao atualizar limite mensal",
-          variant: "destructive",
-        });
-      }
+      showErrorToast("Erro ao atualizar limite mensal", error);
     }
   };
 

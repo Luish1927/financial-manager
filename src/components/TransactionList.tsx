@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { formatCurrency } from "@/lib/utils";
 
 interface TransactionListProps {
   transactions: Transaction[];
@@ -73,10 +74,7 @@ export const TransactionList = ({
                     }`}
                   >
                     {transaction.type === "income" ? "+" : "-"}
-                    {new Intl.NumberFormat("pt-BR", {
-                      style: "currency",
-                      currency: "BRL",
-                    }).format(transaction.amount)}
+                    {formatCurrency(transaction.amount)}
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
