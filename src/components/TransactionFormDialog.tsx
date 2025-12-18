@@ -17,14 +17,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Transaction } from "@/types/transaction";
+import { Category } from "@/types/category";
 import { toast } from "sonner";
+import * as Icons from "lucide-react";
 
 interface TransactionFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialTransaction?: Transaction;
   onSaveTransaction: (transaction: Transaction) => void;
-  categories: string[];
+  categories: Category[];
 }
 
 export const TransactionFormDialog = ({
@@ -81,7 +83,17 @@ export const TransactionFormDialog = ({
     onOpenChange(false);
   };
 
-  const categoryOptions = categories.map(cat => ({ value: cat, label: cat }));
+  const renderIcon = (iconName: string) => {
+    const IconComponent = (Icons as any)[iconName];
+    return IconComponent ? <IconComponent className="h-4 w-4" /> : <Icons.Tag className="h-4 w-4" />;
+  };
+
+  const categoryOptions = categories.map(cat => ({
+    value: cat.name,
+    label: cat.name,
+    icon: cat.icon,
+    color: cat.color
+  }));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -142,7 +154,12 @@ export const TransactionFormDialog = ({
               <SelectContent>
                 {categoryOptions.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
-                    {option.label}
+                    <div className="flex items-center gap-2">
+                      <div style={{ color: option.color }}>
+                        {renderIcon(option.icon)}
+                      </div>
+                      <span>{option.label}</span>
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>

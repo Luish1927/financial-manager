@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Transaction } from '@/types/transaction';
+import { Category } from '@/types/category';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -12,7 +13,7 @@ export const useApi = () => {
   const { token, logout } = useAuth();
   const { toast } = useToast();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [monthlyLimit, setMonthlyLimit] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
@@ -185,15 +186,15 @@ export const useApi = () => {
     }
   };
 
-  const addCategory = async (category: string) => {
+  const addCategory = async (category: Omit<Category, 'id'>) => {
     try {
       const response = await fetch(`${API_URL}/categories`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ name: category }),
+        body: JSON.stringify(category),
       });
-      await handleResponse(response);
-      setCategories((prev) => [...prev, category]);
+      const newCategory = await handleResponse(response);
+      setCategories((prev) => [...prev, newCategory]);
       toast({
         title: "Sucesso",
         description: "Categoria adicionada com sucesso",
@@ -209,22 +210,36 @@ export const useApi = () => {
     }
   };
 
-  const updateCategory = async (oldCategory: string, newCategory: string) => {
+  const updateCategory = async (categoryId: string, updates: Partial<Category>) => {
     try {
-      const response = await fetch(`${API_URL}/categories/${encodeURIComponent(oldCategory)}`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify({ newName: newCategory }),
-      });
-      await handleResponse(response);
+      const categoryToUpdate = categories.find(c => c.id === categoryId);
+      if (!categoryToUpdate) return;
+
+      const response = await fetch(
+        `${API_URL}/categories/${encodeURIComponent(categoryToUpdate.name)}`,
+        {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify(updates),
+        }
+      );
+      const updatedCategory = await handleResponse(response);
+
       setCategories((prev) =>
-        prev.map((c) => (c === oldCategory ? newCategory : c))
+        prev.map((c) => (c.id === categoryId ? updatedCategory : c))
       );
-      setTransactions((prev) =>
-        prev.map((t) =>
-          t.category === oldCategory ? { ...t, category: newCategory } : t
-        )
-      );
+
+      // Atualizar transações se o nome mudou
+      if (updates.name && updates.name !== categoryToUpdate.name) {
+        setTransactions((prev) =>
+          prev.map((t) =>
+            t.category === categoryToUpdate.name
+              ? { ...t, category: updates.name as string }
+              : t
+          )
+        );
+      }
+
       toast({
         title: "Sucesso",
         description: "Categoria atualizada com sucesso",
@@ -240,15 +255,25 @@ export const useApi = () => {
     }
   };
 
-  const deleteCategory = async (category: string) => {
+  const deleteCategory = async (categoryId: string) => {
     try {
-      const response = await fetch(`${API_URL}/categories/${encodeURIComponent(category)}`, {
-        method: 'DELETE',
-        headers,
-      });
+      const categoryToDelete = categories.find(c => c.id === categoryId);
+      if (!categoryToDelete) return;
+
+      const response = await fetch(
+        `${API_URL}/categories/${encodeURIComponent(categoryToDelete.name)}`,
+        {
+          method: 'DELETE',
+          headers,
+        }
+      );
       await handleResponse(response);
-      setCategories((prev) => prev.filter((c) => c !== category));
-      setTransactions((prev) => prev.filter((t) => t.category !== category));
+
+      setCategories((prev) => prev.filter((c) => c.id !== categoryId));
+      setTransactions((prev) =>
+        prev.filter((t) => t.category !== categoryToDelete.name)
+      );
+
       toast({
         title: "Sucesso",
         description: "Categoria deletada com sucesso",

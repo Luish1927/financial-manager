@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc:*)",
+      "Bash(ls:*)",
+      "Bash(for f in *.tsx)",
+      "Bash(do name=\"$f%.tsx\" if ! grep -r \"from.*components/ui/$name\" /Users/luishenrique/Documents/development/pessoal/financial-manager/src)",
+      "Bash(then echo \"$name\" fi done)"
+    ]
+  }
+}

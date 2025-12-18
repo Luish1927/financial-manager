@@ -15,21 +15,30 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       const { data, error } = await supabase
         .from('categories')
-        .select('*')
+        .select('id, name, type, icon, color, description')
         .eq('user_id', auth.user.userId)
         .order('name', { ascending: true });
 
       if (error) throw error;
 
-      const categoryNames = data.map(c => c.name);
-      return res.json(categoryNames);
+      // Retornar objetos completos ao invés de apenas nomes
+      return res.json(data);
     }
 
     if (req.method === 'POST') {
-      const { name } = req.body;
+      const { name, type, icon, color, description } = req.body;
 
-      if (!name) {
-        return res.status(400).json({ error: 'Nome da categoria é obrigatório' });
+      // Validações
+      if (!name || !type || !icon || !color) {
+        return res.status(400).json({
+          error: 'Campos obrigatórios: name, type, icon, color'
+        });
+      }
+
+      if (!['income', 'expense', 'both'].includes(type)) {
+        return res.status(400).json({
+          error: 'Tipo deve ser: income, expense ou both'
+        });
       }
 
       const { data: existing, error: checkError } = await supabase
@@ -44,13 +53,22 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Categoria já existe' });
       }
 
-      const { error: insertError } = await supabase
+      const { data: newCategory, error: insertError } = await supabase
         .from('categories')
-        .insert([{ user_id: auth.user.userId, name }]);
+        .insert([{
+          user_id: auth.user.userId,
+          name,
+          type,
+          icon,
+          color,
+          description: description || ''
+        }])
+        .select()
+        .single();
 
       if (insertError) throw insertError;
 
-      return res.status(201).json({ name });
+      return res.status(201).json(newCategory);
     }
 
     return res.status(405).json({ error: 'Método não permitido' });

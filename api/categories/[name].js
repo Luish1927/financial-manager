@@ -15,11 +15,7 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'PUT') {
-      const { newName } = req.body;
-
-      if (!newName) {
-        return res.status(400).json({ error: 'Novo nome é obrigatório' });
-      }
+      const { newName, type, icon, color, description } = req.body;
 
       const { data: existing, error: checkError } = await supabase
         .from('categories')
@@ -33,35 +29,51 @@ export default async function handler(req, res) {
         return res.status(404).json({ error: 'Categoria não encontrada' });
       }
 
-      const { data: duplicate, error: dupError } = await supabase
-        .from('categories')
-        .select('id')
-        .eq('user_id', auth.user.userId)
-        .eq('name', newName);
+      // Se está mudando o nome, verificar se o novo nome já existe
+      if (newName && newName !== oldName) {
+        const { data: duplicate, error: dupError } = await supabase
+          .from('categories')
+          .select('id')
+          .eq('user_id', auth.user.userId)
+          .eq('name', newName);
 
-      if (dupError) throw dupError;
+        if (dupError) throw dupError;
 
-      if (duplicate && duplicate.length > 0) {
-        return res.status(400).json({ error: 'Categoria com esse nome já existe' });
+        if (duplicate && duplicate.length > 0) {
+          return res.status(400).json({ error: 'Categoria com esse nome já existe' });
+        }
       }
 
-      const { error: updateCatError } = await supabase
+      // Construir objeto de update dinamicamente
+      const updates = {};
+      if (newName) updates.name = newName;
+      if (type) updates.type = type;
+      if (icon) updates.icon = icon;
+      if (color) updates.color = color;
+      if (description !== undefined) updates.description = description;
+
+      const { data: updatedCategory, error: updateCatError } = await supabase
         .from('categories')
-        .update({ name: newName })
+        .update(updates)
         .eq('user_id', auth.user.userId)
-        .eq('name', oldName);
+        .eq('name', oldName)
+        .select()
+        .single();
 
       if (updateCatError) throw updateCatError;
 
-      const { error: updateTransError } = await supabase
-        .from('transactions')
-        .update({ category: newName })
-        .eq('user_id', auth.user.userId)
-        .eq('category', oldName);
+      // Atualizar transações se o nome mudou
+      if (newName && newName !== oldName) {
+        const { error: updateTransError } = await supabase
+          .from('transactions')
+          .update({ category: newName })
+          .eq('user_id', auth.user.userId)
+          .eq('category', oldName);
 
-      if (updateTransError) throw updateTransError;
+        if (updateTransError) throw updateTransError;
+      }
 
-      return res.json({ oldName, newName });
+      return res.json(updatedCategory);
     }
 
     if (req.method === 'DELETE') {

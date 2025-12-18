@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { Transaction } from "@/types/transaction";
+import { Category } from "@/types/category";
 import { CategoriesFilter } from "./CategoriesFilter";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,7 @@ import { Calendar, CalendarDays } from "lucide-react";
 
 interface FinancialChartProps {
   transactions: Transaction[];
-  categories: string[];
+  categories: Category[];
 }
 
 type ViewMode = 'monthly' | 'daily';
