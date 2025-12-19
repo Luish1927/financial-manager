@@ -1,11 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(wc:*)",
-      "Bash(ls:*)",
-      "Bash(for f in *.tsx)",
-      "Bash(do name=\"$f%.tsx\" if ! grep -r \"from.*components/ui/$name\" /Users/luishenrique/Documents/development/pessoal/financial-manager/src)",
-      "Bash(then echo \"$name\" fi done)"
-    ]
+      "Bash(mkdir:*)",
+      "Bash(mv:*)",
+      "Bash(npm run lint:*)",
+      "Bash(tree:*)"
+    ],
+    "deny": [],
+    "ask": []
   }
 }
